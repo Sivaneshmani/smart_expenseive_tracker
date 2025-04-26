@@ -1,0 +1,28 @@
+client/
+├── src/
+│   ├── pages/
+│   │   ├── Budget.jsx
+│   │   ├── BudgetStatus.jsx
+│   │   ├── BudgetTrackerFlowchart.jsx
+│   │   ├── BudgetTrendChart.jsx
+│   │   ├── Dashboard.jsx
+│   │   ├── EditExpenseForm.jsx
+│   │   ├── EditIncomeForm.jsx
+│   │   ├── Errorboundry.jsx
+│   │   ├── Expensetracker.jsx
+│   │   ├── FinancialOverview.jsx
+│   │   ├── Hero.jsx
+│   │   ├── IncomeTracker.jsx
+│   │   ├── Login.jsx
+│   │   ├── Navbar.jsx
+│   │   ├── NotFound.jsx
+│   │   ├── PrivateRoute.jsx
+│   │   ├── RecentTransactions.jsx
+│   │   ├── Sidebar.jsx
+│   │   ├── Signup.jsx (Updated redirect logic)
+│   │   ├── Spendingchart.jsx (Updated for expense/income types)
+│   │   ├── Transactions.jsx
+│   │   ├── UserProfileForm.jsx
+│   ├── App.jsx (Updated routing logic)
+│   ├── index.css
+│   ├── main.jsx
