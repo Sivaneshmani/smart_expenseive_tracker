@@ -4,7 +4,7 @@ The **Smart Expense Tracker** is a web application designed to help users track 
 
 
 
-[![Video Title]](https://github.com/Sivaneshmani/smart_expenseive_tracker/blob/main/readmethings/sbmvideo.mp4)
+[![Video Title](https://github.com/Sivaneshmani/smart_expenseive_tracker/blob/main/readmethings/smb.jpeg)](https://github.com/Sivaneshmani/smart_expenseive_tracker/blob/main/readmethings/sbmvideo.mp4)
 
 
 
