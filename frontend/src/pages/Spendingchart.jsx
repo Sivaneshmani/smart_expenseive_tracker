@@ -30,9 +30,6 @@ const SpendingChart = ({ expenses = [], incomes = [], isDarkMode }) => {
     // Combine data
     const chartData = [...expenseData, ...incomeData];
 
-    // Log data for debugging
-    console.log('SpendingChart data:', chartData);
-
     // ECharts options
     const option = {
       title: {

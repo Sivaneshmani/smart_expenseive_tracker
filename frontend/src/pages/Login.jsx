@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";  // Import toast
+import 'react-toastify/dist/ReactToastify.css';  // Import styles for toast
 
 const Login = ({ onLoginSuccess }) => {
   const navigate = useNavigate();
@@ -13,40 +15,60 @@ const Login = ({ onLoginSuccess }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-  
+
     try {
       const res = await fetch("http://localhost:5000/api/customer/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: formData.email, // Make sure these are the correct fields
+          email: formData.email,
           password: formData.password,
         }),
       });
-  
+
       const data = await res.json();
-  
+
       if (res.ok) {
-        alert("Login successful!");
+        // Use toast.success() to display a success message
+        toast.success("Login successful!", {
+          position: toast.POSITION.TOP_RIGHT,  // Position of the toast
+          autoClose: 5000,  // Duration in ms
+        });
         localStorage.setItem("token", data.token);
         localStorage.setItem("userName", data.name);
         onLoginSuccess && onLoginSuccess(data.name);
         navigate("/dashboard");
       } else {
-        alert(data.message || "Login failed");
+        // Use toast.error() for failed login
+        toast.error(data.message || "Login failed", {
+          position: toast.POSITION.TOP_RIGHT,
+          autoClose: 5000,
+        });
       }
     } catch (err) {
       console.error(err);
-      alert("Something went wrong. Please try again.");
+      toast.error("Something went wrong. Please try again.", {
+        position: toast.POSITION.TOP_RIGHT,
+        autoClose: 5000,
+      });
     } finally {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 to-blue-100 px-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
+      {/* Login Container */}
+      <div className="relative w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
+        
+        {/* Cross Button inside container */}
+        <button
+          onClick={() => navigate("/")}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+        >
+          &times;
+        </button>
+
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-indigo-600">Login</h2>
           <div className="h-1 w-10 bg-indigo-500 rounded mx-auto mt-2" />

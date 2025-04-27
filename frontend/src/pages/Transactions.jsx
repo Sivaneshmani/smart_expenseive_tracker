@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import Navbar from './Navbar';
+import currencyCodes from "currency-codes";
 import Sidebar from './Sidebar';
-import Errorboundry from './Errorboundry';
+import Errorboundry from './ErrorBoundary';
 import EditExpenseForm from './EditExpenseForm';
 import EditIncomeForm from './EditIncomeForm';
+import Navbar from './Navbar';
 
 const Transactions = ({ isDarkMode }) => {
   const [expenses, setExpenses] = useState([]);
@@ -16,6 +17,8 @@ const Transactions = ({ isDarkMode }) => {
   const [endDate, setEndDate] = useState(null);
   const [activeTab, setActiveTab] = useState('transactions');
   const [editingTransaction, setEditingTransaction] = useState(null);
+  const [searchText, setSearchText] = useState(''); // <- added for search
+
   const token = localStorage.getItem('token');
 
   const fetchData = async () => {
@@ -34,7 +37,7 @@ const Transactions = ({ isDarkMode }) => {
       if (!expenseRes.ok) throw new Error(expenseData.message);
       setExpenses(expenseData);
 
-      const incomeRes = await fetch('http://localhost:5000/api/income', {
+      const incomeRes = await fetch('http://localhost:5000/api/income/get', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const incomeData = await incomeRes.json();
@@ -73,14 +76,24 @@ const Transactions = ({ isDarkMode }) => {
     }
   };
 
-  const transactions = [
+  const allTransactions = [
     ...expenses.map((exp) => ({ ...exp, type: 'expense' })),
     ...incomes.map((inc) => ({ ...inc, type: 'income' })),
-  ]
+  ];
+
+  const filteredTransactions = allTransactions
     .filter((transaction) => {
       const transactionDate = new Date(transaction.date || Date.now());
       if (startDate && endDate) {
-        return transactionDate >= startDate && transactionDate <= endDate;
+        if (transactionDate < startDate || transactionDate > endDate) return false;
+      }
+      if (searchText.trim() !== '') {
+        const lowerSearch = searchText.toLowerCase();
+        return (
+          transaction.category?.toLowerCase().includes(lowerSearch) ||
+          transaction.paymentMethod?.toLowerCase().includes(lowerSearch) ||
+          transaction.source?.toLowerCase().includes(lowerSearch)
+        );
       }
       return true;
     })
@@ -102,7 +115,9 @@ const Transactions = ({ isDarkMode }) => {
               <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate mb-6">
                 Transaction History
               </h2>
-              <div className="mb-6 flex space-x-4">
+
+              {/* Filter section */}
+              <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-2 sm:space-y-0">
                 <DatePicker
                   selected={startDate}
                   onChange={(date) => setStartDate(date)}
@@ -122,7 +137,15 @@ const Transactions = ({ isDarkMode }) => {
                   placeholderText="End Date"
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
                 />
+                <input
+                  type="text"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  placeholder="Search category, source or payment method"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                />
               </div>
+
               {editingTransaction ? (
                 editingTransaction.type === 'expense' ? (
                   <EditExpenseForm
@@ -147,48 +170,52 @@ const Transactions = ({ isDarkMode }) => {
                 <div className="bg-white shadow rounded-lg overflow-hidden">
                   <div className="p-5">
                     <ul className="divide-y divide-gray-200">
-                      {transactions.map((transaction) => (
-                        <li key={transaction._id} className="py-3 flex items-center justify-between">
-                          <div className="flex items-center">
-                            <div
-                              className={`flex-shrink-0 rounded-full p-2 ${
-                                transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
-                              }`}
-                            >
-                              <i className="fas fa-dollar-sign text-sm"></i>
+                      {filteredTransactions.length > 0 ? (
+                        filteredTransactions.map((transaction) => (
+                          <li key={transaction._id} className="py-3 flex items-center justify-between">
+                            <div className="flex items-center">
+                              <div
+                                className={`flex-shrink-0 rounded-full p-2 ${
+                                  transaction.type === 'income' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                                }`}
+                              >
+                                <i className="fas fa-dollar-sign text-sm"></i>
+                              </div>
+                              <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-900">
+                                  {transaction.category || transaction.source}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {new Date(transaction.date || Date.now()).toLocaleDateString()}
+                                </p>
+                              </div>
                             </div>
-                            <div className="ml-3">
-                              <p className="text-sm font-medium text-gray-900">
-                                {transaction.category || transaction.source}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(transaction.date || Date.now()).toLocaleDateString()}
-                              </p>
+                            <div className="ml-3 flex items-center space-x-2">
+                              <span
+                                className={`text-sm font-medium ${
+                                  transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                                }`}
+                              >
+                                {transaction.type === 'income' ? '+' : '-'}{formatter.format(Math.abs(Number(transaction.amount)))}
+                              </span>
+                              <button
+                                onClick={() => setEditingTransaction(transaction)}
+                                className="text-blue-600 hover:text-blue-800"
+                              >
+                                <i className="fas fa-edit"></i>
+                              </button>
+                              <button
+                                onClick={() => handleDelete(transaction)}
+                                className="text-red-600 hover:text-red-800"
+                              >
+                                <i className="fas fa-trash"></i>
+                              </button>
                             </div>
-                          </div>
-                          <div className="ml-3 flex items-center space-x-2">
-                            <span
-                              className={`text-sm font-medium ${
-                                transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                              }`}
-                            >
-                              {transaction.type === 'income' ? '+' : '-'}{formatter.format(Math.abs(Number(transaction.amount)))}
-                            </span>
-                            <button
-                              onClick={() => setEditingTransaction(transaction)}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
-                              <i className="fas fa-edit"></i>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(transaction)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              <i className="fas fa-trash"></i>
-                            </button>
-                          </div>
-                        </li>
-                      ))}
+                          </li>
+                        ))
+                      ) : (
+                        <p className="text-center text-gray-500">No transactions found.</p>
+                      )}
                     </ul>
                   </div>
                 </div>

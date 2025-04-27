@@ -5,13 +5,14 @@ import EditIncomeForm from './EditIncomeForm';
 const IncomeTracker = ({ onUpdate }) => {
   const [source, setSource] = useState('');
   const [amount, setAmount] = useState('');
+  const [currency, setCurrency] = useState('INR'); // Added currency state
   const [incomes, setIncomes] = useState([]);
   const [editingIncome, setEditingIncome] = useState(null);
   const token = localStorage.getItem('token');
 
   const fetchIncome = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/income', {
+      const res = await fetch('http://localhost:5000/api/income/get', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -29,7 +30,7 @@ const IncomeTracker = ({ onUpdate }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!source || !amount) {
+    if (!source || !amount || !currency) { // Validate currency as well
       toast.error('Please fill all fields');
       return;
     }
@@ -41,12 +42,13 @@ const IncomeTracker = ({ onUpdate }) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ source, amount }),
+        body: JSON.stringify({ source, amount, currency }), // Include currency
       });
 
       if (res.ok) {
         setSource('');
         setAmount('');
+        setCurrency('INR'); // Reset currency
         fetchIncome();
         toast.success('Income added successfully');
       } else {
@@ -119,6 +121,17 @@ const IncomeTracker = ({ onUpdate }) => {
             required
             className="w-full border px-3 py-2 rounded"
           />
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="w-full border px-3 py-2 rounded"
+          >
+            <option value="INR">INR</option>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+            <option value="GBP">GBP</option>
+            {/* Add other currencies as needed */}
+          </select>
           <button
             type="submit"
             className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"

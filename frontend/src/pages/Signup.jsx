@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import { toast } from 'react-toastify';  // Import toast
 import { useAppContext } from '../context/AppContext';
 
 const Signup = () => {
@@ -25,21 +25,38 @@ const Signup = () => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('userName', formData.name);
         localStorage.setItem('isNewUser', 'true');
-        toast.success('Signup successful! Please set up your profile.');
-        handleSignupSuccess();
+        toast.success('Signup successful! Please set up your profile.', {
+          position: toast.POSITION.TOP_RIGHT,
+          autoClose: 5000,
+        });
         navigate('/dashboard');
       } else {
-        toast.error(`Signup failed: ${data.message || 'Unknown error'}`);
+        toast.error(`Signup failed: ${data.message || 'Unknown error'}`, {
+          position: toast.POSITION.TOP_RIGHT,
+          autoClose: 5000,
+        });
       }
     } catch (err) {
-      toast.error(`Error during signup: ${err.message || 'Unable to fetch data'}`);
+      toast.error(`Error during signup: ${err.message || 'Unable to fetch data'}`, {
+        position: toast.POSITION.TOP_RIGHT,
+        autoClose: 5000,
+      });
       console.error('Signup error details:', err);
     }
   };
 
   return (
     <div className={`min-h-screen ${isDarkMode ? 'bg-gray-900' : 'bg-gray-100'} flex items-center justify-center`}>
-      <div className={`w-full max-w-md p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md`}>
+      <div className={`relative w-full max-w-md p-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-md`}>
+        
+        {/* Cross Button inside container */}
+        <button
+          onClick={() => navigate('/')}
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+        >
+          &times;
+        </button>
+
         <h2 className="text-2xl font-bold text-center mb-6">Sign Up</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

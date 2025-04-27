@@ -1,84 +1,97 @@
 import { useState } from 'react';
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-
-function Hero({ isDarkMode, userName, toggleTheme, handleLogout }) {
-  const [ctaHover, setCtaHover] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const navigate = useNavigate();
-
-  const handleLogin = () => {
-    navigate('/login');
-  };
-
+import Navbar from './Navbar';
+import image3 from '../assets/image/image3.jpg'; // Import the image
+function Hero({ isDarkMode }) {
   return (
     <>
-      <header className="bg-white shadow fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <NavLink to="/" className="text-2xl font-bold text-gray-900">
-                Budget Tracker
-              </NavLink>
+      {/* Navbar */}
+      <Navbar />
+
+      {/* Hero Section */}
+      <section
+        id="hero"
+        className={`py-20 ${
+          isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-800'
+        } text-center`}
+      >
+        <div className="container mx-auto">
+          <div className="flex flex-col md:flex-row items-center">
+            {/* Text Content */}
+            <div className="md:w-1/2">
+              <h1 className="text-5xl font-extrabold mb-6">
+                Smart Expense Tracker
+              </h1>
+              <p className="text-xl mb-8">
+                Take control of your finances with ease. Track, manage, and
+                analyze your expenses in one place.
+              </p>
             </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={toggleTheme}
-                className="text-gray-600 hover:text-gray-900 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-gray-100"
-              >
-                <i className="fas fa-moon text-lg"></i>
-              </button>
-              <button className="relative text-gray-600 hover:text-gray-900">
-                <i className="fas fa-bell text-lg"></i>
-                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                  3
-                </span>
-              </button>
-              <div className="relative">
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center text-gray-600 hover:text-gray-900 focus:outline-none"
-                >
-                  <i className="fas fa-user-circle text-2xl"></i>
-                  {userName && <span className="ml-2 text-sm font-medium hidden md:block">{userName}</span>}
-                </button>
-                {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-dropdown">
-                    <NavLink
-                      to="/profile"
-                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      onClick={() => setIsProfileOpen(false)}
-                    >
-                      Profile
-                    </NavLink>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={handleLogin}
-                className="text-gray-600 hover:text-gray-900 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-gray-100"
-              >
-                <i className="fas fa-sign-out-alt text-lg"></i> <span className="hidden md:inline ml-2">Login</span>
-              </button>
+
+            {/* Image */}
+            <div className="md:w-1/2">
+              <img
+                src={image3}
+                alt="Smart Expense Tracker"
+                className="rounded-lg shadow-lg"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
+            <div className="bg-white shadow-lg rounded-lg p-6">
+              <h3 className="text-2xl font-bold mb-4 text-blue-600">
+                Track Expenses
+              </h3>
+              <p>
+                Log your daily expenses effortlessly and keep a detailed record
+                of your spending habits.
+              </p>
+            </div>
+            <div className="bg-white shadow-lg rounded-lg p-6">
+              <h3 className="text-2xl font-bold mb-4 text-blue-600">
+                Set Budgets
+              </h3>
+              <p>
+                Create budgets for different categories and stay on top of your
+                financial goals.
+              </p>
+            </div>
+            <div className="bg-white shadow-lg rounded-lg p-6">
+              <h3 className="text-2xl font-bold mb-4 text-blue-600">
+                Analyze Trends
+              </h3>
+              <p>
+                Visualize your spending patterns with insightful charts and
+                reports.
+              </p>
             </div>
           </div>
         </div>
-      </header>
+      </section>
 
-      <section className={`py-20 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-800'} text-center`}>
-        <div className="container mx-auto">
-          <h2 className="text-4xl font-bold mb-4">Welcome to MySite</h2>
-          <p className="text-lg mb-6">Discover an amazing experience with our interactive platform.</p>
-          <button
-            className={`px-6 py-3 rounded-lg text-white font-semibold transition-transform duration-300 ${
-              ctaHover ? 'scale-105' : ''
-            } ${isDarkMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
-            onMouseEnter={() => setCtaHover(true)}
-            onMouseLeave={() => setCtaHover(false)}
-            onClick={() => alert('Get Started clicked!')}
-          >
-            Get Started
-          </button>
+      {/* Contact Section */}
+      <section
+        id="Contact"
+        className={`${
+          isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-800'
+        } py-20`}
+      >
+        <div className="container mx-auto text-center bg-gray-200 p-8 rounded-lg shadow-lg">
+          <h2 className="text-3xl font-bold mb-6">Contact Us</h2>
+          <p className="text-lg mb-6">
+            We’d love to hear from you! Whether you have questions, feedback, or
+            just want to say hi, feel free to reach out.
+          </p>
+
+          <div className="text-left max-w-2xl mx-auto">
+            <div className="mb-4">
+              <strong>Email:</strong> sivaneshmani7@gmail.com;
+            </div>
+            <div className="mb-4">
+              <strong>Address:</strong> Sri Shakthi Institute of Engineering and Technology, Coimbatore, Tamil Nadu, India
+            </div>
+          </div>
         </div>
       </section>
     </>

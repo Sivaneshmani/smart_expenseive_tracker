@@ -1,17 +1,49 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { useAppContext } from '../context/AppContext'; // Adjust path if necessary
 
-const Navbar = ({ userName }) => {
-  const { toggleTheme } = useAppContext();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [userName, setUserName] = useState(localStorage.getItem('user')); // <- Fetch userName directly
+
+  // Create a reference for the Contact section
+  const contactRef = useRef(null);
+
+  useEffect(() => {
+    // Update token and userName every time route changes
+    setToken(localStorage.getItem('token'));
+    setUserName(localStorage.getItem('user')); // Update user name also
+  }, [location]);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     toast.success('Logged out successfully');
     navigate('/login');
+    setToken(null);
+    setUserName(null); // Important: clear username also
+  };
+
+  const handleLogin = async () => {
+    // assuming your API gives you a token and user object
+    const response = await loginAPI(); 
+    
+    localStorage.setItem('token', response.token); 
+    localStorage.setItem('user', response.user.name); // <- Save username properly here
+    
+    toast.success('Login successful');
+    navigate('/dashboard');
+  };
+
+  const handleScrollToContact = () => {
+    if (contactRef.current) {
+      contactRef.current.scrollIntoView({ behavior: 'smooth' });
+      
+    }
+    navigate('/#contact'); // Navigate to the contact section
   };
 
   return (
@@ -23,67 +55,47 @@ const Navbar = ({ userName }) => {
               Budget Tracker
             </NavLink>
           </div>
+
           <div className="flex items-center space-x-4">
-            <button
-              onClick={toggleTheme}
-              className="text-gray-600 hover:text-gray-900 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-gray-100"
-            >
-              <i className="fas fa-moon text-lg"></i>
-            </button>
-            <button className="relative text-gray-600 hover:text-gray-900">
-              <i className="fas fa-bell text-lg"></i>
-              <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                3
-              </span>
-            </button>
-            <div className="relative">
-              <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center text-gray-600 hover:text-gray-900 focus:outline-none"
-              >
-                <i className="fas fa-user-circle text-2xl"></i>
-                {userName && <span className="ml-2 text-sm font-medium hidden md:block">{userName}</span>}
-              </button>
-              {isProfileOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-dropdown">
-                  <NavLink
-                    to="/profile"
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                    onClick={() => setIsProfileOpen(false)}
-                  >
-                    Profile
-                  </NavLink>
-                </div>
-              )}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="text-gray-600 hover:text-gray-900 transition-colors duration-200 px-3 py-2 rounded-md hover:bg-gray-100"
-            >
-              <i className="fas fa-sign-out-alt text-lg"></i> <span className="hidden md:inline ml-2">Logout</span>
-            </button>
+            {token ? (
+              <>
+                <NavLink to="/" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
+                  Home
+                </NavLink>
+                <NavLink to="/dashboard" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
+                  Dashboard
+                </NavLink>
+
+                {/* Updated Contact link to trigger smooth scroll */}
+                <button
+                  onClick={handleScrollToContact}
+                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md"
+                >
+                  Contact
+                </button>
+
+                <span className="ml-2 text-sm font-medium hidden md:block">
+                  {userName}
+                </span>
+
+                <button
+                  onClick={handleLogout}
+                  className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md hover:bg-gray-100"
+                >
+                  <i className="fas fa-sign-out-alt"></i> 
+                  <span className="hidden md:inline ml-2">Logout</span>
+                </button>
+              </>
+            ) : (
+              <NavLink to="/login" className="text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md">
+                Login
+              </NavLink>
+            )}
           </div>
         </div>
       </div>
     </header>
   );
 };
-
-// CSS for dropdown animation
-const styles = `
-  @keyframes dropdown {
-    from {
-      transform: scale(0.95);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-  .animate-dropdown {
-    animation: dropdown 0.3s ease-in-out forwards;
-  }
-`;
 
 export default Navbar;

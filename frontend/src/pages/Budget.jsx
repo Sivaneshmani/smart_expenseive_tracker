@@ -1,58 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
-import Navbar from './Navbar';
+import React, { useState } from 'react';
 import Sidebar from './Sidebar';
-import Errorboundry from './Errorboundry';
+import ErrorBoundary from './ErrorBoundary';
 import IncomeTracker from './IncomeTracker';
 import Expensetracker from './Expensetracker';
-import BudgetStatus from './BudgetStatus';
 
 const Budget = ({ isDarkMode }) => {
-  const [profile, setProfile] = useState(null);
   const [activeTab, setActiveTab] = useState('budget');
-  const token = localStorage.getItem('token');
-
-  const fetchProfile = async () => {
-    try {
-      const profileRes = await fetch('http://localhost:5000/api/user/profile', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const profileData = await profileRes.json();
-      if (!profileRes.ok) throw new Error(profileData.message);
-      setProfile(profileData);
-    } catch (err) {
-      toast.error('Error fetching profile');
-      console.error('Error fetching profile:', err);
-    }
-  };
-
-  useEffect(() => {
-    if (token) fetchProfile();
-  }, [token]);
 
   return (
-    <Errorboundry>
-      <div className="min-h-screen bg-gray-50 flex flex-col">
-        <Navbar userName={profile?.name} />
+    <ErrorBoundary>
+      <div
+        className={`min-h-screen flex flex-col ${
+          isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'
+        }`}
+      >
+        {/* Sidebar and Main Content */}
         <div className="flex-1 flex overflow-hidden pt-16">
           <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-          <main className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-6">
+          <main
+            className={`flex-1 overflow-y-auto p-4 md:p-6 ${
+              isDarkMode ? 'bg-gray-800' : 'bg-white'
+            } rounded-lg shadow-lg`}
+          >
             <div className="max-w-7xl mx-auto">
-              <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate mb-6">
+              {/* Page Title */}
+              <h2 className="text-3xl font-extrabold leading-7 sm:text-4xl sm:truncate mb-6">
                 Budget Management
               </h2>
-              <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-                <div className="space-y-5">
-                  <IncomeTracker onUpdate={fetchProfile} />
-                  <Expensetracker onUpdate={fetchProfile} />
+
+              {/* Two-Column Grid Layout */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Add Income */}
+                <div className="p-6 bg-blue-100 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                  <h3 className="text-xl font-bold mb-4 text-blue-600">
+                    Add Income
+                  </h3>
+                  <IncomeTracker />
                 </div>
-                <BudgetStatus />
+
+                {/* Add Expense */}
+                <div className="p-6 bg-red-100 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+                  <h3 className="text-xl font-bold mb-4 text-red-600">
+                    Add Expense
+                  </h3>
+                  <Expensetracker />
+                </div>
               </div>
             </div>
           </main>
         </div>
       </div>
-    </Errorboundry>
+    </ErrorBoundary>
   );
 };
 
