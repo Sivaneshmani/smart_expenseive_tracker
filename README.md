@@ -49,9 +49,6 @@ The **Smart Expense Tracker** is a web application designed to help users track 
 
 -----------------------------------------------------------------------------------------------
 
-![ChatGPT Image Apr 28, 2025, 12_09_24 AM](https://github.com/user-attachments/assets/3142a79b-af6b-43ec-82a1-3a2c88931c39)
-
-
 
 Test Case: Customer Signup API
 Request Payload:
