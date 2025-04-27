@@ -4,7 +4,7 @@ const Income = require('../models/Income');
 const auth = require('../middleware/auth');
 
 // GET all income entries for a user
-router.get('/', auth, async (req, res) => {
+router.get('/get', auth, async (req, res) => {
   try {
     const incomes = await Income.find({ userId: req.user._id }).sort({ date: -1 });
     res.json(incomes);
@@ -56,17 +56,21 @@ router.delete('/:id', auth, async (req, res) => {
 router.put('/:id', auth, async (req, res) => {
   try {
     const { source, amount, currency } = req.body;
+
     if (!source || amount == null) {
       return res.status(400).json({ message: 'Source and amount are required' });
     }
+
     const updatedIncome = await Income.findOneAndUpdate(
       { _id: req.params.id, userId: req.user._id },
       { source, amount, currency: currency || 'INR' },
       { new: true }
     );
+
     if (!updatedIncome) {
       return res.status(404).json({ message: 'Income not found' });
     }
+
     res.json(updatedIncome);
   } catch (err) {
     console.error('Error updating income:', err);
