@@ -23,10 +23,12 @@ The **Smart Expense Tracker** is a web application designed to help users track 
 ## Installation
 
 1. Clone the repository to your local machine:
+   
    ```bash
    git clone https://github.com/yourusername/smart-expense-tracker.git
    ```
 2. Navigate to the project directory:
+   
       ```bash
    cd smart-expense-tracker
    ```
