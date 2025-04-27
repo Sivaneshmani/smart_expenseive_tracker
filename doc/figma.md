@@ -1,0 +1,1 @@
+https://www.figma.com/design/Q7yhspIXrv4CrTNQsD7B4c/adhya-ai-ui?node-id=0-1&t=aLY0Z8ynU9Jsf3yo-1
