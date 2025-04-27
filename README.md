@@ -14,7 +14,7 @@ The **Smart Expense Tracker** is a web application designed to help users track 
 - **Frontend**: React.js
 - **Backend**: Node.js, Express.js
 - **Database**: MongoDB (or any database of your choice)
-- **AI/Chatbot**: OpenAI (or any other AI tool/library)
+- **AI/Chatbot**: GeminiAI (or any other AI tool/library)
 - **Authentication**: JWT (JSON Web Tokens)
 - **Hosting**: Vercel / Heroku (or any other cloud platform)
 - **CSS Framework**: Tailwind CSS (or any other)
