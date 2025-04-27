@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
 import Sidebar from './Sidebar';
 import BudgetTrendChart from './BudgetTrendChart';
-import SpendingChart from './SpendingChart';
+import SpendingChart from './SpendingChart.jsx';
 import FinancialOverview from './FinancialOverview';
 import Chatbox from './Chatbox';
 
