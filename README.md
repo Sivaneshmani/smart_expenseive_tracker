@@ -3,11 +3,6 @@
 The **Smart Expense Tracker** is a web application designed to help users track their expenses, manage their monthly budgets, and receive AI-driven insights. The AI helps by chatting with users to understand their financial status and money management, offering personalized recommendations for monthly budgets and detecting anomalies in spending behavior.
 
 
-
-[![Video Title](https://github.com/Sivaneshmani/smart_expenseive_tracker/blob/main/readmethings/smb.jpeg)](https://github.com/Sivaneshmani/smart_expenseive_tracker/blob/main/readmethings/sbmvideo.mp4)
-
-
-
 ## Features
 
 - **Expense Tracking**: Log and categorize your expenses.
