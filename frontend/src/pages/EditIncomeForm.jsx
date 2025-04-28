@@ -14,7 +14,7 @@ const EditIncomeForm = ({ income, onUpdate, onCancel }) => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/income/${income._id}`, {
+      const res = await fetch(`https://smart-expenseive-tracker.onrender.com/api/income/${income._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

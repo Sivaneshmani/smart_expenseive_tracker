@@ -23,21 +23,21 @@ const Transactions = ({ isDarkMode }) => {
 
   const fetchData = async () => {
     try {
-      const profileRes = await fetch('http://localhost:5000/api/user/profile', {
+      const profileRes = await fetch('https://smart-expenseive-tracker.onrender.com/api/user/profile', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const profileData = await profileRes.json();
       if (!profileRes.ok) throw new Error(profileData.message);
       setProfile(profileData);
 
-      const expenseRes = await fetch('http://localhost:5000/api/expenses', {
+      const expenseRes = await fetch('https://smart-expenseive-tracker.onrender.com/api/expenses', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const expenseData = await expenseRes.json();
       if (!expenseRes.ok) throw new Error(expenseData.message);
       setExpenses(expenseData);
 
-      const incomeRes = await fetch('http://localhost:5000/api/income/get', {
+      const incomeRes = await fetch('https://smart-expenseive-tracker.onrender.com/api/income/get', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const incomeData = await incomeRes.json();
@@ -56,8 +56,8 @@ const Transactions = ({ isDarkMode }) => {
   const handleDelete = async (transaction) => {
     try {
       const url = transaction.type === 'expense'
-        ? `http://localhost:5000/api/expenses/${transaction._id}`
-        : `http://localhost:5000/api/income/${transaction._id}`;
+        ? `https://smart-expenseive-tracker.onrender.com/api/expenses/${transaction._id}`
+        : `https://smart-expenseive-tracker.onrender.com/api/income/${transaction._id}`;
       const res = await fetch(url, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },

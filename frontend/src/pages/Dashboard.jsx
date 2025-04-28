@@ -26,28 +26,28 @@ const Dashboard = ({ isDarkMode }) => {
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const profileRes = await fetch('http://localhost:5000/api/user/profile', {
+        const profileRes = await fetch('https://smart-expenseive-tracker.onrender.com/api/user/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!profileRes.ok) throw new Error('Failed to fetch profile');
         const profileData = await profileRes.json();
         setProfile(profileData);
 
-        const budgetsRes = await fetch('http://localhost:5000/api/budgets/get', {
+        const budgetsRes = await fetch('https://smart-expenseive-tracker.onrender.com/api/budgets/get', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!budgetsRes.ok) throw new Error('Failed to fetch budgets');
         const budgetsData = await budgetsRes.json();
         setBudgets(budgetsData || []);
 
-        const expensesRes = await fetch('http://localhost:5000/api/expenses', {
+        const expensesRes = await fetch('https://smart-expenseive-tracker.onrender.com/api/expenses', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!expensesRes.ok) throw new Error('Failed to fetch expenses');
         const expensesData = await expensesRes.json();
         setExpenses(expensesData || []);
 
-        const incomesRes = await fetch('http://localhost:5000/api/income/get', {
+        const incomesRes = await fetch('https://smart-expenseive-tracker.onrender.com/api/income/get', {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!incomesRes.ok) throw new Error('Failed to fetch incomes');

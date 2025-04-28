@@ -14,7 +14,7 @@ const EditExpenseForm = ({ expense, onUpdate, onCancel }) => {
     }
 
     try {
-      const res = await fetch(`http://localhost:5000/api/expenses/${expense._id}`, {
+      const res = await fetch(`https://smart-expenseive-tracker.onrender.com/api/expenses/${expense._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

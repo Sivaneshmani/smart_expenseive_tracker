@@ -17,7 +17,7 @@ const Login = ({ onLoginSuccess }) => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/api/customer/login", {
+      const res = await fetch("https://smart-expenseive-tracker.onrender.com/api/customer/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

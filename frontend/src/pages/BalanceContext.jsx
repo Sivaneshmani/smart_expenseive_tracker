@@ -23,7 +23,7 @@ export const BalanceProvider = ({ children }) => {
     }
     try {
       console.log('Updating balance with:', newBalance);
-      const response = await fetch('http://localhost:5000/api/user/balance', {
+      const response = await fetch('https://smart-expenseive-tracker.onrender.com/api/user/balance', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,

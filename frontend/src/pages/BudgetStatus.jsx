@@ -33,7 +33,7 @@ const MonthlyBudget = () => {
 
     const fetchMonthlyBudget = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/monthly-budget?userId=${userId}`, {
+        const response = await axios.get(`https://smart-expenseive-tracker.onrender.com/api/monthly-budget?userId=${userId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setMonthlyBudget(response.data.monthlyBudget || 0); // If not set yet, default to 0
@@ -71,7 +71,7 @@ const MonthlyBudget = () => {
 
     try {
       await axios.post(
-        `http://localhost:5000/api/monthly-budget`,
+        `https://smart-expenseive-tracker.onrender.com/api/monthly-budget`,
         { monthlyBudget, userId },
         { headers: { Authorization: `Bearer ${token}` } }
       );

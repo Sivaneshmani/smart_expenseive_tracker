@@ -12,7 +12,7 @@ const IncomeTracker = ({ onUpdate }) => {
 
   const fetchIncome = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/income/get', {
+      const res = await fetch('https://smart-expenseive-tracker.onrender.com/api/income/get', {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -36,7 +36,7 @@ const IncomeTracker = ({ onUpdate }) => {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/income', {
+      const res = await fetch('https://smart-expenseive-tracker.onrender.com/api/income', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,7 +67,7 @@ const IncomeTracker = ({ onUpdate }) => {
 
   const handleDelete = async (id) => {
     try {
-      const res = await fetch(`http://localhost:5000/api/income/${id}`, {
+      const res = await fetch(`https://smart-expenseive-tracker.onrender.com/api/income/${id}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,

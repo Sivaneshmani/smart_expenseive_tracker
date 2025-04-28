@@ -24,7 +24,7 @@ const ExpenseTracker = () => {
 
   const fetchExpenses = async () => {
     try {
-      const url = new URL('http://localhost:5000/api/expenses');
+      const url = new URL('https://smart-expenseive-tracker.onrender.com/api/expenses');
       const params = { start: startDate, end: endDate };
       Object.keys(params).forEach((key) => params[key] || delete params[key]);
       url.search = new URLSearchParams(params).toString();
@@ -47,7 +47,7 @@ const ExpenseTracker = () => {
 
   const fetchIncomes = async () => {
     try {
-      const res = await fetch('http://localhost:5000/api/income/get', {
+      const res = await fetch('https://smart-expenseive-tracker.onrender.com/api/income/get', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -76,7 +76,7 @@ const ExpenseTracker = () => {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/expenses', {
+      const res = await fetch('https://smart-expenseive-tracker.onrender.com/api/expenses', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
