@@ -1,0 +1,2929 @@
+hey i have an idea form my project that is
+first home page will be open in home page if user has move to dashboard then first login or signup page has to come after login it will directly move to dashboard if user is a new user then after signup it should move to user ptofile  and i need to collect the data from user profile and show in dashboard
+in dashboard i need a user can edit,delete or update the income as well as expense data
+if user in put income then it should add in totalbudgeet as well as in income if expense is add then it should subract from total income as well as income  and i need a graph and flow chart for budget tracker
+and if user has reached more than goal i need to warn him
+ have alred done some modules if any error in frontend or in backend please update with me if any new modules need  can insert also
+
+client side module that i have created:
+BudgetStatus.jsx
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { jwtDecode } from 'jwt-decode';
+
+const BudgetStatus = () => {
+  const [budgetCategories, setBudgetCategories] = useState([]);
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const decoded = jwtDecode(token);
+      setUserId(decoded.id); // or decoded._id based on backend
+    }
+  }, []);
+
+  useEffect(() => {
+    const fetchBudgetData = async () => {
+      try {
+        const response = await axios.get(`/api/budgets?userId=${userId}`);
+        setBudgetCategories(response.data);
+      } catch (error) {
+        console.error('Error fetching budget data:', error);
+      }
+    };
+
+    if (userId) {
+      fetchBudgetData();
+    }
+  }, [userId]);
+
+  return (
+    <div className="bg-white shadow rounded-lg overflow-hidden">
+      {/* UI content here */}
+    </div>
+  );
+};
+
+export default BudgetStatus;
+next page Dashbord.jsx
+import React, { useState, useEffect } from "react";
+import Navbar from "./Navbar";
+import Sidebar from "./Sidebar";
+import FinancialOverview from "./FinancialOverview";
+import SpendingChart from "./Spendingchart";
+import RecentTransactions from "./RecentTransactions";
+import BudgetStatus from "./BudgetStatus";
+import IncomeTracker from './IncomeTracker';
+import Expensetracker from './Expensetracker';
+import Errorboundry from "./Errorboundry";
+
+const Dashboard = () => {
+  const [expenses, setExpenses] = useState([]);
+  const [incomes, setIncomes] = useState([]);
+  const [profile, setProfile] = useState(null);
+  const [showExpenseTracker, setShowExpenseTracker] = useState(false);
+  const [activeTab, setActiveTab] = useState("dashboard");
+  const [currentMonth] = useState("April");
+  const token = localStorage.getItem("token");
+
+  const fetchData = async () => {
+    try {
+      const profileRes = await fetch("http://localhost:5000/api/user/profile", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const profileData = await profileRes.json();
+      setProfile(profileData);
+
+      const expenseRes = await fetch("http://localhost:5000/api/expenses", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const expenseData = await expenseRes.json();
+      setExpenses(expenseData);
+
+      const incomeRes = await fetch("http://localhost:5000/api/income", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const incomeData = await incomeRes.json();
+      setIncomes(incomeData);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (token) fetchData();
+  }, [token]);
+
+  const monthlyIncome = Number(profile?.monthlyIncome || 0);
+
+  const additionalIncome = incomes.reduce((sum, income) => sum + Number(income.amount), 0);
+
+  const totalIncome = monthlyIncome + additionalIncome;
+
+  const totalExpenses = expenses
+    .filter((exp) => Number(exp.amount) < 0)
+    .reduce((sum, exp) => sum + Math.abs(Number(exp.amount)), 0);
+
+  const balanceData = {
+    total: totalIncome - totalExpenses,
+    income: totalIncome,
+    expenses: totalExpenses,
+    savings: profile?.savingsGoal || 1000,
+  };
+
+  const handleAddExpense = () => {
+    setShowExpenseTracker(!showExpenseTracker);
+  };
+
+  const IncomeEditor = () => {
+    const [editIncome, setEditIncome] = useState(monthlyIncome);
+
+    const handleSave = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/user/profile", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ monthlyIncome: editIncome }),
+        });
+
+        if (res.ok) {
+          fetchData();
+        }
+      } catch (err) {
+        console.error("Failed to update income", err);
+      }
+    };
+
+    return (
+      <div className="bg-white p-4 rounded shadow mt-6 max-w-md">
+        <label className="block text-sm font-medium mb-1 text-gray-700">Edit Monthly Income</label>
+        <input
+          type="number"
+          value={editIncome}
+          onChange={(e) => setEditIncome(e.target.value)}
+          className="w-full px-3 py-2 border border-gray-300 rounded mb-2"
+        />
+        <button
+          onClick={handleSave}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+        >
+          Save
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      <Navbar onAddExpense={handleAddExpense} />
+      <div className="flex-1 flex overflow-hidden pt-16">
+        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-4 md:p-6">
+          <div className="max-w-7xl mx-auto">
+            <div className="md:flex md:items-center md:justify-between mb-6">
+              <div className="flex-1 min-w-0">
+                <h2 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">Dashboard</h2>
+                <div className="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
+                  <div className="mt-2 flex items-center text-sm text-gray-500">
+                    <i className="fas fa-calendar-alt flex-shrink-0 mr-1.5 text-gray-400"></i>
+                    <span>Period: {currentMonth} 2025</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 flex md:mt-0 md:ml-4 space-x-3">
+                <button
+                  onClick={handleAddExpense}
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+                >
+                  <i className="fas fa-plus mr-2"></i>
+                  Add Expense
+                </button>
+
+                <button
+                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+                >
+                  <i className="fas fa-download mr-2"></i>
+                  Export Report
+                </button>
+              </div>
+            </div>
+
+            <FinancialOverview balanceData={balanceData} />
+            <IncomeEditor />
+
+            <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-5">
+                <SpendingChart balanceData={balanceData} />
+                <RecentTransactions expenses={expenses} />
+                {showExpenseTracker && (
+                  <div className="bg-white shadow rounded-lg overflow-hidden p-5">
+                    <Expensetracker onUpdate={fetchData} />
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-5">
+                <IncomeTracker onUpdate={fetchData} />
+
+                <div className="bg-white shadow rounded-lg overflow-hidden">
+                  <div className="p-5">
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">Spending by Category</h3>
+                    <div className="mt-4" style={{ height: "250px" }}>
+                      <SpendingChart expenses={expenses} />
+                    </div>
+                  </div>
+                </div>
+
+                <BudgetStatus />
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
+next page errorbound.jsx
+import React from 'react';
+
+class Errorboundry extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("Error caught by Error Boundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="p-6 bg-red-100 text-red-800 rounded-md">
+          <h2 className="text-lg font-bold">Something went wrong.</h2>
+          <p>Please refresh the page or try again later.</p>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+export default Errorboundry;
+next is expensetracker.jsx
+import React, { useState } from 'react';
+
+const Expensetracker = ({ onUpdate = () => {} }) => {
+  const [category, setCategory] = useState('');
+  const [amount, setAmount] = useState('');
+  const token = localStorage.getItem('token');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!category || !amount) return;
+
+    try {
+      const res = await fetch('http://localhost:5000/api/expenses', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ category, amount }),
+      });
+
+      if (res.ok) {
+        setCategory('');
+        setAmount('');
+        onUpdate(); // refresh expenses in dashboard
+      } else {
+        const data = await res.json();
+        alert(data.message || 'Failed to add expense');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error adding expense');
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="bg-white p-6 rounded-xl shadow-md space-y-4">
+      <div>
+        <label className="block font-medium mb-1">Category</label>
+        <input
+          type="text"
+          className="w-full px-4 py-2 border rounded-lg"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          required
+        />
+      </div>
+      <div>
+        <label className="block font-medium mb-1">Amount</label>
+        <input
+          type="number"
+          className="w-full px-4 py-2 border rounded-lg"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+        />
+      </div>
+      <button
+        type="submit"
+        className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+      >
+        Add Expense
+      </button>
+    </form>
+  );
+};
+
+export default Expensetracker;
+next is financialoverview
+import React from 'react';
+
+const FinancialOverview = ({ balanceData }) => {
+  return (
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="p-5">
+          <div className="flex items-center">
+            <div className="flex-shrink-0 bg-indigo-500 rounded-md p-3">
+              <i className="fas fa-wallet text-white text-xl"></i>
+            </div>
+            <div className="ml-5 w-0 flex-1">
+              <dl>
+                <dt className="text-sm font-medium text-gray-500 truncate">Total Balance</dt>
+                <dd>
+                  <div className="text-lg font-semibold text-gray-900">
+                    ${balanceData.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="p-5">
+          <div className="flex items-center">
+            <div className="flex-shrink-0 bg-green-500 rounded-md p-3">
+              <i className="fas fa-arrow-down text-white text-xl"></i>
+            </div>
+            <div className="ml-5 w-0 flex-1">
+              <dl>
+                <dt className="text-sm font-medium text-gray-500 truncate">Income</dt>
+                <dd>
+                  <div className="text-lg font-semibold text-gray-900">
+                    ${balanceData.income.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="p-5">
+          <div className="flex items-center">
+            <div className="flex-shrink-0 bg-red-500 rounded-md p-3">
+              <i className="fas fa-arrow-up text-white text-xl"></i>
+            </div>
+            <div className="ml-5 w-0 flex-1">
+              <dl>
+                <dt className="text-sm font-medium text-gray-500 truncate">Expenses</dt>
+                <dd>
+                  <div className="text-lg font-semibold text-gray-900">
+                    ${balanceData.expenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white overflow-hidden shadow rounded-lg">
+        <div className="p-5">
+          <div className="flex items-center">
+            <div className="flex-shrink-0 bg-amber-500 rounded-md p-3">
+              <i className="fas fa-piggy-bank text-white text-xl"></i>
+            </div>
+            <div className="ml-5 w-0 flex-1">
+              <dl>
+                <dt className="text-sm font-medium text-gray-500 truncate">Savings</dt>
+                <dd>
+                  <div className="text-lg font-semibold text-gray-900">
+                    ${balanceData.savings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default FinancialOverview;
+next is Hero.jsx
+import { useState } from 'react';
+import React from 'react';
+function Hero({ isDarkMode }) {
+  const [ctaHover, setCtaHover] = useState(false);
+
+  return (
+    <section className={`py-20 ${isDarkMode ? 'bg-gray-800 text-white' : 'bg-gray-100 text-gray-800'} text-center`}>
+      <div className="container mx-auto">
+        <h2 className="text-4xl font-bold mb-4">Welcome to MySite</h2>
+        <p className="text-lg mb-6">Discover an amazing experience with our interactive platform.</p>
+        <button
+          className={`px-6 py-3 rounded-lg text-white font-semibold transition-transform duration-300 ${
+            ctaHover ? 'scale-105' : ''
+          } ${isDarkMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}
+          onMouseEnter={() => setCtaHover(true)}
+          onMouseLeave={() => setCtaHover(false)}
+          onClick={() => alert('Get Started clicked!')}
+        >
+          Get Started
+        </button>
+      </div>
+    </section>
+  );
+}
+
+export default Hero;
+next is IncomeTracker.jsx
+import React, { useState, useEffect } from 'react';
+
+function IncomeTracker({ onUpdate }) {
+  const [source, setSource] = useState('');
+  const [amount, setAmount] = useState('');
+  const [incomes, setIncomes] = useState([]);
+  const token = localStorage.getItem('token');
+
+  const fetchIncome = async () => {
+    const res = await fetch('http://localhost:5000/api/income', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    const data = await res.json();
+    setIncomes(data);
+    if (onUpdate) onUpdate(); // re-fetch dashboard totals
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const res = await fetch('http://localhost:5000/api/income', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ source, amount })
+    });
+
+    if (res.ok) {
+      setSource('');
+      setAmount('');
+      fetchIncome();
+    } else {
+      console.error('Failed to add income');
+    }
+  };
+
+  useEffect(() => {
+    fetchIncome();
+  }, []);
+
+  return (
+    <div className="p-4 bg-white rounded shadow">
+      <h3 className="text-lg font-bold mb-2">Add Income</h3>
+      <form onSubmit={handleSubmit} className="space-y-2">
+        <input
+          type="text"
+          placeholder="Source"
+          value={source}
+          onChange={(e) => setSource(e.target.value)}
+          required
+          className="w-full border px-3 py-2 rounded"
+        />
+        <input
+          type="number"
+          placeholder="Amount"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          required
+          className="w-full border px-3 py-2 rounded"
+        />
+        <button
+          type="submit"
+          className="bg-green-500 text-white px-4 py-2 rounded"
+        >
+          Add Income
+        </button>
+      </form>
+      <ul className="mt-4">
+        {incomes.map((inc) => (
+          <li key={inc._id}>
+            {inc.source}: ₹{inc.amount}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export default IncomeTracker;
+
+next is Login.jsx
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+const Login = () => {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [loading, setLoading] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        alert("Login successful!");
+        localStorage.setItem("token", data.token);
+        navigate("/dashboard"); // ✅ Force redirect to /dashboard
+      } else {
+        alert(data.message || "Login failed");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-100 to-blue-100 px-4">
+      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow-lg">
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-indigo-600">Login</h2>
+          <div className="h-1 w-10 bg-indigo-500 rounded mx-auto mt-2" />
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-400 focus:outline-none"
+            />
+          </div>
+
+          <div className="text-right text-sm text-indigo-600 hover:underline cursor-pointer">
+            Forgot password?
+          </div>
+
+          <div className="flex flex-col space-y-3 mt-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition duration-300"
+            >
+              {loading ? "Logging in..." : "Login"}
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate("/signup")}
+              className="border border-indigo-600 text-indigo-600 py-2 rounded-lg hover:bg-indigo-50 transition duration-300"
+            >
+              Sign Up
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Login;
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+
+const Navbar = ({ onAddExpense, userName = 'User Name' }) => {
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const token = localStorage.getItem('token');
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  return (
+    <header className="bg-white shadow-sm border-b border-gray-200 fixed w-full z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          {/* Logo & Mobile Menu */}
+          <div className="flex">
+            <div className="flex-shrink-0 flex items-center">
+              <i className="fas fa-wallet text-indigo-600 text-2xl mr-2"></i>
+              <span className="font-bold text-xl text-gray-900">ExpenseTracker</span>
+            </div>
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden ml-6 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+            >
+              <i className={`fas ${isMobileMenuOpen ? 'fa-times' : 'fa-bars'} text-gray-500`}></i>
+            </button>
+          </div>
+
+          {/* Center Search */}
+          <div className="hidden md:flex md:flex-1 md:justify-center md:ml-6">
+            <div className="max-w-lg w-full">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <i className="fas fa-search text-gray-400"></i>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search expenses..."
+                  className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg bg-gray-50 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center space-x-4">
+            {token ? (
+              <>
+                <button
+                  onClick={onAddExpense}
+                  className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+                >
+                  <i className="fas fa-plus mr-2"></i> Add Expense
+                </button>
+
+                {/* Notifications */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                    className="bg-white p-2 rounded-full text-gray-500 hover:text-gray-600"
+                  >
+                    <i className="fas fa-bell text-lg"></i>
+                    <span className="absolute top-0 right-0 block h-5 w-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">3</span>
+                  </button>
+                  {isNotificationOpen && (
+                    <div className="absolute right-0 mt-2 w-80 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                      <div className="py-2 px-4 border-b border-gray-100">
+                        <h3 className="text-sm font-medium text-gray-900">Notifications</h3>
+                      </div>
+                      <div className="max-h-72 overflow-y-auto">
+                        <div className="py-2 px-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer">
+                          <p className="text-sm text-gray-700">You've exceeded your budget for April.</p>
+                          <p className="text-xs text-gray-500 mt-1">2 hours ago</p>
+                        </div>
+                        <div className="py-2 px-4 hover:bg-gray-50 cursor-pointer">
+                          <p className="text-sm text-gray-700">Unusual spending detected in Shopping category.</p>
+                          <p className="text-xs text-gray-500 mt-1">2 days ago</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Profile Dropdown */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsProfileOpen(!isProfileOpen)}
+                    className="flex items-center text-sm"
+                  >
+                    <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold">
+                      {userName?.charAt(0).toUpperCase() || 'U'}
+                    </div>
+                    <span className="ml-2 text-gray-700 hidden md:block">{userName}</span>
+                    <i className="fas fa-chevron-down ml-1 text-gray-400 hidden md:block"></i>
+                  </button>
+                  {isProfileOpen && (
+                    <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                      <div className="py-1">
+                        <Link to="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</Link>
+                        <Link to="/dashboard" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Dashboard</Link>
+                        <button
+                          onClick={handleLogout}
+                          className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Sign out
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                >
+                  Signup
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <Link to="/dashboard" className="block px-3 py-2 rounded-md text-base font-medium text-indigo-600 bg-indigo-50">
+              Dashboard
+            </Link>
+            <Link to="/expensetracker" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">
+              Tracker
+            </Link>
+            <Link to="/profile" className="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-50">
+              Profile
+            </Link>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+};
+
+export default Navbar;
+
+import React from 'react';
+
+const NotFound = () => {
+  return (
+    <div className="flex flex-col items-center justify-center h-screen">
+      <h1 className="text-4xl font-bold text-red-500 mb-4">404 - Page Not Found</h1>
+      <p className="text-lg text-gray-600">Oops! The page you’re looking for doesn't exist.</p>
+    </div>
+  );
+};
+
+export default NotFound;
+
+import React from 'react';
+
+const RecentTransactions = ({ expenses }) => {
+  return (
+    <div className="bg-white shadow rounded-lg overflow-hidden">
+      <div className="p-5">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Transactions</h3>
+          <div className="flex space-x-2">
+            <button className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+              All
+            </button>
+            <button className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+              Income
+            </button>
+            <button className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+              Expenses
+            </button>
+          </div>
+        </div>
+        <div className="mt-4 flow-root">
+          <ul className="divide-y divide-gray-200">
+            {expenses.slice(0, 5).map((exp, index) => (
+              <li key={index} className="py-3 flex items-center justify-between">
+                <div className="flex items-center">
+                  <div
+                    className={`flex-shrink-0 rounded-full p-2 ${
+                      Number(exp.amount) > 0 ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'
+                    }`}
+                  >
+                    <i className={`fas fa-dollar-sign text-sm`}></i>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm font-medium text-gray-900">{exp.category}</p>
+                    <p className="text-xs text-gray-500">{new Date().toLocaleDateString()}</p>
+                  </div>
+                </div>
+                <div className="ml-3 flex-shrink-0">
+                  <span
+                    className={`text-sm font-medium ${
+                      Number(exp.amount) > 0 ? 'text-green-600' : 'text-red-600'
+                    }`}
+                  >
+                    {Number(exp.amount) > 0 ? '+' : ''}${Math.abs(Number(exp.amount)).toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default RecentTransactions;
+
+import React from 'react';
+
+const Sidebar = ({ activeTab, setActiveTab }) => {
+  return (
+    <nav className="hidden md:block bg-white w-64 border-r border-gray-200 pt-5 pb-4 flex-shrink-0">
+      <div className="flex flex-col h-full px-4">
+        <div className="space-y-1 flex-1">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md w-full ${
+              activeTab === 'dashboard'
+                ? 'bg-indigo-50 text-indigo-600'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <i
+              className={`fas fa-tachometer-alt mr-3 text-lg ${
+                activeTab === 'dashboard' ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'
+              }`}
+            ></i>
+            Dashboard
+          </button>
+          <button
+            onClick={() => setActiveTab('transactions')}
+            className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md w-full ${
+              activeTab === 'transactions'
+                ? 'bg-indigo-50 text-indigo-600'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <i
+              className={`fas fa-exchange-alt mr-3 text-lg ${
+                activeTab === 'transactions' ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'
+              }`}
+            ></i>
+            Transactions
+          </button>
+          <button
+            onClick={() => setActiveTab('budgets')}
+            className={`group flex items-center px-3 py-2 text-sm font-medium rounded-md w-full ${
+              activeTab === 'budgets'
+                ? 'bg-indigo-50 text-indigo-600'
+                : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+            }`}
+          >
+            <i
+              className={`fas fa-chart-pie mr-3 text-lg ${
+                activeTab === 'budgets' ? 'text-indigo-500' : 'text-gray-400 group-hover:text-gray-500'
+              }`}
+            ></i>
+            Budgets
+          </button>
+        </div>
+      </div>
+    </nav>
+  );
+};
+
+export default Sidebar;
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+function Signup({ isDarkMode }) {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('http://localhost:5000/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('token', data.token); // ✅ Save JWT
+        alert('Signup successful! You are now logged in.');
+        navigate('/profile'); // ✅ Go to profile setup after signup
+      } else {
+        alert(data.message || 'Signup failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Something went wrong');
+    }
+  };
+
+  return (
+    <div
+      className={`flex items-center justify-center min-h-screen px-4 ${
+        isDarkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900' : 'bg-gradient-to-br from-pink-100 to-purple-100'
+      }`}
+    >
+      <div
+        className={`w-full max-w-md p-8 rounded-2xl shadow-lg ${
+          isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'
+        }`}
+      >
+        <div className="text-center mb-6">
+          <h2 className="text-2xl font-bold text-purple-600">Signup</h2>
+          <div className={`h-1 w-10 rounded mx-auto mt-2 ${isDarkMode ? 'bg-purple-400' : 'bg-purple-500'}`} />
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div>
+            <label htmlFor="name" className="block text-sm font-medium mb-1">Name</label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              value={formData.name}
+              onChange={handleChange}
+              required
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none ${
+                isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-300'
+              }`}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none ${
+                isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-300'
+              }`}
+            />
+          </div>
+
+          <div>
+            <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-400 focus:outline-none ${
+                isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-300'
+              }`}
+            />
+          </div>
+
+          <div className="flex flex-col space-y-3 mt-4">
+            <button
+              type="submit"
+              className={`py-2 rounded-lg text-white transition duration-300 ${
+                isDarkMode
+                  ? 'bg-purple-500 hover:bg-purple-600'
+                  : 'bg-purple-600 hover:bg-purple-700'
+              }`}
+            >
+              Signup
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className={`py-2 rounded-lg transition duration-300 ${
+                isDarkMode
+                  ? 'border border-purple-400 text-purple-400 hover:bg-purple-800'
+                  : 'border border-purple-600 text-purple-600 hover:bg-purple-50'
+              }`}
+            >
+              Go to Login
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default Signup;
+
+import React, { useEffect } from 'react';
+import * as echarts from 'echarts';
+
+function Spendingchart({ data, isDarkMode }) {
+  useEffect(() => {
+    const chartDom = document.getElementById('spending-chart');
+    if (!chartDom || !data || !data.expenses) return;
+
+    // Dispose previous instance if exists
+    echarts.dispose(chartDom);
+
+    const myChart = echarts.init(chartDom);
+
+    const option = {
+      title: {
+        text: 'Spending Pattern',
+        left: 'center',
+        textStyle: {
+          color: isDarkMode ? '#fff' : '#333',
+        },
+      },
+      tooltip: {
+        trigger: 'item',
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'left',
+        textStyle: {
+          color: isDarkMode ? '#fff' : '#333',
+        },
+      },
+      series: [
+        {
+          name: 'Expenses',
+          type: 'pie',
+          radius: '50%',
+          data: data.expenses.map((expense) => ({
+            name: expense.category,
+            value: expense.amount,
+          })),
+          emphasis: {
+            itemStyle: {
+              shadowBlur: 10,
+              shadowOffsetX: 0,
+              shadowColor: 'rgba(0, 0, 0, 0.5)',
+            },
+          },
+        },
+      ],
+    };
+
+    myChart.setOption(option);
+
+    return () => {
+      myChart.dispose();
+    };
+  }, [data, isDarkMode]);
+
+  if (!data || !data.expenses) {
+    return <div className="text-center p-4">Loading chart...</div>;
+  }
+
+  return (
+    <div id="spending-chart" className="w-full h-96" />
+  );
+}
+
+
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import currencyCodes from 'currency-codes';
+
+function getCurrencySymbol(code) {
+  try {
+    return new Intl.NumberFormat('en', {
+      style: 'currency',
+      currency: code
+    })
+      .formatToParts(1.0)
+      .find(part => part.type === 'currency')?.value;
+  } catch {
+    return ''; // fallback if Intl doesn't support it
+  }
+}
+
+const allCurrencies = currencyCodes.data.map(curr => ({
+  code: curr.code,
+  currency: curr.currency,
+  symbol: getCurrencySymbol(curr.code),
+}));
+
+function UserProfileForm({ isDarkMode }) {
+  const [formData, setFormData] = useState({
+    name: '',
+    monthlyIncome: '',
+    budget: '',
+    savingsGoal: '',
+    currency: 'INR',
+  });
+
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const token = localStorage.getItem('token');
+    if (!token) {
+      alert('User not authenticated. Please log in again.');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:5000/api/user/profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Profile saved successfully!');
+        navigate('/dashboard');
+      } else {
+        alert(data.message || 'Failed to save profile');
+      }
+    } catch (error) {
+      console.error('Error submitting profile:', error);
+      alert('Something went wrong. Please try again.');
+    }
+  };
+
+  return (
+    <div className={`flex items-center justify-center min-h-screen px-4 ${isDarkMode ? 'bg-gradient-to-br from-gray-800 to-gray-900' : 'bg-gradient-to-br from-teal-100 to-blue-100'}`}>
+      <form
+        onSubmit={handleSubmit}
+        className={`w-full max-w-md p-8 rounded-2xl shadow-lg space-y-6 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-white text-gray-800'}`}
+      >
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-teal-600">User Profile</h2>
+          <div className={`h-1 w-10 rounded mx-auto mt-2 ${isDarkMode ? 'bg-teal-400' : 'bg-teal-500'}`} />
+        </div>
+
+        {['name', 'monthlyIncome', 'budget', 'savingsGoal'].map((field, idx) => (
+          <div key={idx}>
+            <label className="block text-sm font-medium mb-1">
+              {field === 'monthlyIncome' ? 'Monthly Income' :
+               field === 'budget' ? 'Total Monthly Budget' :
+               field === 'savingsGoal' ? 'Savings Goal' : 'Name'}
+            </label>
+            <input
+              type={field === 'name' ? 'text' : 'number'}
+              name={field}
+              value={formData[field]}
+              onChange={handleChange}
+              required
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-400 focus:outline-none ${isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}
+            />
+          </div>
+        ))}
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Currency Preference</label>
+          <select
+            name="currency"
+            value={formData.currency}
+            onChange={handleChange}
+            required
+            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-400 focus:outline-none ${isDarkMode ? 'bg-gray-700 text-white border-gray-600' : 'bg-white text-gray-800 border-gray-300'}`}
+          >
+            <option value="">Select currency</option>
+            {allCurrencies.map((curr) => (
+              <option key={curr.code} value={curr.code}>
+                {curr.code} — {curr.symbol} ({curr.currency})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          className={`w-full py-2 rounded-lg text-white transition duration-300 ${isDarkMode ? 'bg-teal-500 hover:bg-teal-600' : 'bg-teal-600 hover:bg-teal-700'}`}
+        >
+          Save Profile
+        </button>
+      </form>
+    </div>
+  );
+}
+
+export default UserProfileForm;
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+import React, { useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Navbar from './pages/Navbar';
+import Hero from './pages/Hero';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
+import Expensetracker from './pages/Expensetracker';
+import UserProfileForm from './pages/UserProfileForm';
+import Dashboard from './pages/Dashbord';
+import NotFound from './pages/NotFound';
+import Errorboundry from './pages/Errorboundry';
+function App() {
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
+
+  return (
+    <div className={isDarkMode ? 'bg-gray-900 text-white min-h-screen' : 'bg-white text-gray-800 min-h-screen'}>
+      <Navbar toggleTheme={toggleTheme} isDarkMode={isDarkMode} />
+      <Routes>
+        <Route path="/" element={<Hero isDarkMode={isDarkMode} />} />
+        <Route path="/login" element={<Login isDarkMode={isDarkMode} />} />
+        <Route path="/signup" element={<Signup isDarkMode={isDarkMode} />} />
+        <Route path="/dashboard" element={<Dashboard isDarkMode={isDarkMode} />} />
+        <Route path="/expensetracker" element={<Expensetracker isDarkMode={isDarkMode} />} />
+        <Route path="/profile" element={<UserProfileForm isDarkMode={isDarkMode} />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </div>
+  );
+}
+
+export default App;
+
+this is index.css
+@import "tailwindcss";
+
+main.jsx
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App.jsx';
+import './index.css';
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
+and server or backend is:
+middleware/auth.js
+const jwt = require("jsonwebtoken");
+
+const authenticate = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ message: "Authorization header missing or invalid." });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "secret123");
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired token." });
+  }
+};
+
+module.exports = authenticate;
+models/Budjet.js
+const mongoose = require('mongoose');
+
+const budgetSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    required: true,
+    ref: 'User',
+  },
+  name: {
+    type: String,
+    required: true,
+  },
+  spent: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
+  budget: {
+    type: Number,
+    required: true,
+  },
+  icon: {
+    type: String,
+    default: 'fa-tags',
+  },
+  color: {
+    type: String,
+    default: 'bg-gray-500',
+  }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Budget', budgetSchema);
+models/Expense.jsx
+const mongoose = require("mongoose");
+
+const expenseSchema = new mongoose.Schema({
+  category: String,
+  amount: Number,
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+});
+
+module.exports = mongoose.model("Expense", expenseSchema);
+
+models/income.js
+const mongoose = require("mongoose");
+
+const incomeSchema = new mongoose.Schema({
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  source: {
+    type: String,
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
+module.exports = mongoose.model("Income", incomeSchema);
+
+models/Users.js
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+  name: String,
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  monthlyIncome: Number,
+  budget: Number,
+  savingsGoal: Number,
+  currency: { type: String, default: 'INR' },
+});
+
+module.exports = mongoose.model('User', userSchema);
+
+routes/authroute.js
+const express = require("express");
+const router = express.Router();
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+const authMiddleware = require('../middleware/auth');
+
+// Signup: Create user + auto-login (return token)
+router.post("/signup", async (req, res) => {
+  const { name, email, password } = req.body;
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser)
+      return res.status(400).json({ message: "User already exists" });
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({ name, email, password: hashedPassword });
+    await newUser.save();
+
+    const token = jwt.sign({ id: newUser._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+    res.json({ token });
+  } catch (err) {
+    console.error("Signup error:", err);
+    res.status(500).json({ message: "Server error during signup" });
+  }
+});
+
+// Login: Validate credentials + return JWT
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+  try {
+    const user = await User.findOne({ email });
+    if (!user)
+      return res.status(400).json({ message: "Invalid credentials" });
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res.status(401).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1d",
+    });
+    res.json({ token });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ message: "Server error during login" });
+  }
+});
+
+// Profile Save/Update (Protected)
+router.post("/profile", authMiddleware, async (req, res) => {
+  try {
+    const { name, monthlyIncome, budget } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { name, monthlyIncome, budget },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "Profile saved successfully", user: updatedUser });
+  } catch (error) {
+    console.error("Profile save error:", error);
+    res.status(500).json({ message: "Failed to save profile" });
+  }
+});
+
+module.exports = router;
+routes/budjet.js
+const express = require('express');
+const router = express.Router();
+const Budget = require('../models/Budget');
+const verifyToken = require('../middleware/auth');
+
+// GET budgets for authenticated user
+router.get('/', verifyToken, async (req, res) => {
+    try {
+      const budgets = await Budget.find({ userId: req.user.id });
+      res.json(budgets);
+    } catch (err) {
+      res.status(500).json({ error: 'Server error' });
+    }
+  });
+  
+
+// POST a new budget category
+// POST new budget category
+router.post('/', async (req, res) => {
+    try {
+      const newBudget = new Budget(req.body); 
+      await newBudget.save();
+      res.status(201).json(newBudget);
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
+  });  
+
+module.exports = router;
+
+routes/expenses.js
+const express = require("express");
+const router = express.Router();
+const auth = require("../middleware/auth");
+const Expense = require("../models/Expense");
+
+// Get all expenses for logged-in user
+router.get("/", auth, async (req, res) => {
+  try {
+    const expenses = await Expense.find({ user: req.user.id });
+    res.json(expenses);
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Add a new expense
+router.post("/", auth, async (req, res) => {
+  try {
+    const { category, amount } = req.body;
+    const newExpense = new Expense({
+      category,
+      amount,
+      user: req.user.id,
+    });
+    await newExpense.save();
+    res.status(201).json(newExpense);
+  } catch (err) {
+    res.status(500).json({ message: "Error adding expense" });
+  }
+});
+
+// Delete an expense
+router.delete("/:id", auth, async (req, res) => {
+  try {
+    await Expense.findByIdAndDelete(req.params.id);
+    res.json({ message: "Expense deleted" });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting expense" });
+  }
+});
+
+// Update an expense
+router.put("/:id", auth, async (req, res) => {
+  try {
+    const updated = await Expense.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    res.status(500).json({ message: "Error updating expense" });
+  }
+});
+
+module.exports = router;
+routes/income.js
+const express = require("express");
+const router = express.Router();
+const Income = require("../models/Income");
+const authenticate = require("../middleware/auth");
+
+// ✅ GET all income entries for a user
+router.get("/", authenticate, async (req, res) => {
+  try {
+    const incomes = await Income.find({ userId: req.user.id }).sort({ date: -1 });
+    res.json(incomes);
+  } catch (err) {
+    res.status(500).json({ message: "Server error fetching income." });
+  }
+});
+
+// ✅ POST a new income entry
+router.post("/", authenticate, async (req, res) => {
+  const { source, amount } = req.body;
+
+  if (!source || amount == null) {
+    return res.status(400).json({ message: "Source and amount are required." });
+  }
+
+  try {
+    const newIncome = new Income({
+      userId: req.user.id,
+      source,
+      amount,
+    });
+
+    const savedIncome = await newIncome.save();
+    res.status(201).json(savedIncome);
+  } catch (err) {
+    res.status(500).json({ message: "Server error saving income." });
+  }
+});
+
+// ✅ DELETE an income entry
+router.delete("/:id", authenticate, async (req, res) => {
+  try {
+    const income = await Income.findOne({ _id: req.params.id, userId: req.user.id });
+
+    if (!income) {
+      return res.status(404).json({ message: "Income not found." });
+    }
+
+    await income.deleteOne();
+    res.json({ message: "Income deleted." });
+  } catch (err) {
+    res.status(500).json({ message: "Error deleting income." });
+  }
+});
+
+module.exports = router;
+profile.js
+
+.env
+MONGO_URI=mongodb://localhost:27017/expense_tracker
+JWT_SECRET=yourSuperSecretKey
+
+package-lock.json
+{
+  "name": "server",
+  "version": "1.0.0",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {
+    "": {
+      "name": "server",
+      "version": "1.0.0",
+      "license": "ISC",
+      "dependencies": {
+        "bcryptjs": "^3.0.2",
+        "cors": "^2.8.5",
+        "dotenv": "^16.5.0",
+        "express": "^5.1.0",
+        "jsonwebtoken": "^9.0.2",
+        "mongoose": "^8.13.2"
+      }
+    },
+    "node_modules/@mongodb-js/saslprep": {
+      "version": "1.2.2",
+      "resolved": "https://registry.npmjs.org/@mongodb-js/saslprep/-/saslprep-1.2.2.tgz",
+      "integrity": "sha512-EB0O3SCSNRUFk66iRCpI+cXzIjdswfCs7F6nOC3RAGJ7xr5YhaicvsRwJ9eyzYvYRlCSDUO/c7g4yNulxKC1WA==",
+      "license": "MIT",
+      "dependencies": {
+        "sparse-bitfield": "^3.0.3"
+      }
+    },
+    "node_modules/@types/webidl-conversions": {
+      "version": "7.0.3",
+      "resolved": "https://registry.npmjs.org/@types/webidl-conversions/-/webidl-conversions-7.0.3.tgz",
+      "integrity": "sha512-CiJJvcRtIgzadHCYXw7dqEnMNRjhGZlYK05Mj9OyktqV8uVT8fD2BFOB7S1uwBE3Kj2Z+4UyPmFw/Ixgw/LAlA==",
+      "license": "MIT"
+    },
+    "node_modules/@types/whatwg-url": {
+      "version": "11.0.5",
+      "resolved": "https://registry.npmjs.org/@types/whatwg-url/-/whatwg-url-11.0.5.tgz",
+      "integrity": "sha512-coYR071JRaHa+xoEvvYqvnIHaVqaYrLPbsufM9BF63HkwI5Lgmy2QR8Q5K/lYDYo5AK82wOvSOS0UsLTpTG7uQ==",
+      "license": "MIT",
+      "dependencies": {
+        "@types/webidl-conversions": "*"
+      }
+    },
+    "node_modules/accepts": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/accepts/-/accepts-2.0.0.tgz",
+      "integrity": "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng==",
+      "license": "MIT",
+      "dependencies": {
+        "mime-types": "^3.0.0",
+        "negotiator": "^1.0.0"
+      },
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/bcryptjs": {
+      "version": "3.0.2",
+      "resolved": "https://registry.npmjs.org/bcryptjs/-/bcryptjs-3.0.2.tgz",
+      "integrity": "sha512-k38b3XOZKv60C4E2hVsXTolJWfkGRMbILBIe2IBITXciy5bOsTKot5kDrf3ZfufQtQOUN5mXceUEpU1rTl9Uog==",
+      "license": "BSD-3-Clause",
+      "bin": {
+        "bcrypt": "bin/bcrypt"
+      }
+    },
+    "node_modules/body-parser": {
+      "version": "2.2.0",
+      "resolved": "https://registry.npmjs.org/body-parser/-/body-parser-2.2.0.tgz",
+      "integrity": "sha512-02qvAaxv8tp7fBa/mw1ga98OGm+eCbqzJOKoRt70sLmfEEi+jyBYVTDGfCL/k06/4EMk/z01gCe7HoCH/f2LTg==",
+      "license": "MIT",
+      "dependencies": {
+        "bytes": "^3.1.2",
+        "content-type": "^1.0.5",
+        "debug": "^4.4.0",
+        "http-errors": "^2.0.0",
+        "iconv-lite": "^0.6.3",
+        "on-finished": "^2.4.1",
+        "qs": "^6.14.0",
+        "raw-body": "^3.0.0",
+        "type-is": "^2.0.0"
+      },
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/bson": {
+      "version": "6.10.3",
+      "resolved": "https://registry.npmjs.org/bson/-/bson-6.10.3.tgz",
+      "integrity": "sha512-MTxGsqgYTwfshYWTRdmZRC+M7FnG1b4y7RO7p2k3X24Wq0yv1m77Wsj0BzlPzd/IowgESfsruQCUToa7vbOpPQ==",
+      "license": "Apache-2.0",
+      "engines": {
+        "node": ">=16.20.1"
+      }
+    },
+    "node_modules/buffer-equal-constant-time": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/buffer-equal-constant-time/-/buffer-equal-constant-time-1.0.1.tgz",
+      "integrity": "sha512-zRpUiDwd/xk6ADqPMATG8vc9VPrkck7T07OIx0gnjmJAnHnTVXNQG3vfvWNuiZIkwu9KrKdA1iJKfsfTVxE6NA==",
+      "license": "BSD-3-Clause"
+    },
+    "node_modules/bytes": {
+      "version": "3.1.2",
+      "resolved": "https://registry.npmjs.org/bytes/-/bytes-3.1.2.tgz",
+      "integrity": "sha512-/Nf7TyzTx6S3yRJObOAV7956r8cr2+Oj8AC5dt8wSP3BQAoeX58NoHyCU8P8zGkNXStjTSi6fzO6F0pBdcYbEg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/call-bind-apply-helpers": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/call-bind-apply-helpers/-/call-bind-apply-helpers-1.0.2.tgz",
+      "integrity": "sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0",
+        "function-bind": "^1.1.2"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/call-bound": {
+      "version": "1.0.4",
+      "resolved": "https://registry.npmjs.org/call-bound/-/call-bound-1.0.4.tgz",
+      "integrity": "sha512-+ys997U96po4Kx/ABpBCqhA9EuxJaQWDQg7295H4hBphv3IZg0boBKuwYpt4YXp6MZ5AmZQnU/tyMTlRpaSejg==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bind-apply-helpers": "^1.0.2",
+        "get-intrinsic": "^1.3.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/content-disposition": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/content-disposition/-/content-disposition-1.0.0.tgz",
+      "integrity": "sha512-Au9nRL8VNUut/XSzbQA38+M78dzP4D+eqg3gfJHMIHHYa3bg067xj1KxMUWj+VULbiZMowKngFFbKczUrNJ1mg==",
+      "license": "MIT",
+      "dependencies": {
+        "safe-buffer": "5.2.1"
+      },
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/content-type": {
+      "version": "1.0.5",
+      "resolved": "https://registry.npmjs.org/content-type/-/content-type-1.0.5.tgz",
+      "integrity": "sha512-nTjqfcBFEipKdXCv4YDQWCfmcLZKm81ldF0pAopTvyrFGVbcR6P/VAAd5G7N+0tTr8QqiU0tFadD6FK4NtJwOA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/cookie": {
+      "version": "0.7.2",
+      "resolved": "https://registry.npmjs.org/cookie/-/cookie-0.7.2.tgz",
+      "integrity": "sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/cookie-signature": {
+      "version": "1.2.2",
+      "resolved": "https://registry.npmjs.org/cookie-signature/-/cookie-signature-1.2.2.tgz",
+      "integrity": "sha512-D76uU73ulSXrD1UXF4KE2TMxVVwhsnCgfAyTg9k8P6KGZjlXKrOLe4dJQKI3Bxi5wjesZoFXJWElNWBjPZMbhg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=6.6.0"
+      }
+    },
+    "node_modules/cors": {
+      "version": "2.8.5",
+      "resolved": "https://registry.npmjs.org/cors/-/cors-2.8.5.tgz",
+      "integrity": "sha512-KIHbLJqu73RGr/hnbrO9uBeixNGuvSQjul/jdFvS/KFSIH1hWVd1ng7zOHx+YrEfInLG7q4n6GHQ9cDtxv/P6g==",
+      "license": "MIT",
+      "dependencies": {
+        "object-assign": "^4",
+        "vary": "^1"
+      },
+      "engines": {
+        "node": ">= 0.10"
+      }
+    },
+    "node_modules/debug": {
+      "version": "4.4.0",
+      "resolved": "https://registry.npmjs.org/debug/-/debug-4.4.0.tgz",
+      "integrity": "sha512-6WTZ/IxCY/T6BALoZHaE4ctp9xm+Z5kY/pzYaCHRFeyVhojxlrm+46y68HA6hr0TcwEssoxNiDEUJQjfPZ/RYA==",
+      "license": "MIT",
+      "dependencies": {
+        "ms": "^2.1.3"
+      },
+      "engines": {
+        "node": ">=6.0"
+      },
+      "peerDependenciesMeta": {
+        "supports-color": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/depd": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/depd/-/depd-2.0.0.tgz",
+      "integrity": "sha512-g7nH6P6dyDioJogAAGprGpCtVImJhpPk/roCzdb3fIh61/s/nPsfR6onyMwkCAR/OlC3yBC0lESvUoQEAssIrw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/dotenv": {
+      "version": "16.5.0",
+      "resolved": "https://registry.npmjs.org/dotenv/-/dotenv-16.5.0.tgz",
+      "integrity": "sha512-m/C+AwOAr9/W1UOIZUo232ejMNnJAJtYQjUbHoNTBNTJSvqzzDh7vnrei3o3r3m9blf6ZoDkvcw0VmozNRFJxg==",
+      "license": "BSD-2-Clause",
+      "engines": {
+        "node": ">=12"
+      },
+      "funding": {
+        "url": "https://dotenvx.com"
+      }
+    },
+    "node_modules/dunder-proto": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/dunder-proto/-/dunder-proto-1.0.1.tgz",
+      "integrity": "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bind-apply-helpers": "^1.0.1",
+        "es-errors": "^1.3.0",
+        "gopd": "^1.2.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/ecdsa-sig-formatter": {
+      "version": "1.0.11",
+      "resolved": "https://registry.npmjs.org/ecdsa-sig-formatter/-/ecdsa-sig-formatter-1.0.11.tgz",
+      "integrity": "sha512-nagl3RYrbNv6kQkeJIpt6NJZy8twLB/2vtz6yN9Z4vRKHN4/QZJIEbqohALSgwKdnksuY3k5Addp5lg8sVoVcQ==",
+      "license": "Apache-2.0",
+      "dependencies": {
+        "safe-buffer": "^5.0.1"
+      }
+    },
+    "node_modules/ee-first": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/ee-first/-/ee-first-1.1.1.tgz",
+      "integrity": "sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==",
+      "license": "MIT"
+    },
+    "node_modules/encodeurl": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/encodeurl/-/encodeurl-2.0.0.tgz",
+      "integrity": "sha512-Q0n9HRi4m6JuGIV1eFlmvJB7ZEVxu93IrMyiMsGC0lrMJMWzRgx6WGquyfQgZVb31vhGgXnfmPNNXmxnOkRBrg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/es-define-property": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/es-define-property/-/es-define-property-1.0.1.tgz",
+      "integrity": "sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/es-errors": {
+      "version": "1.3.0",
+      "resolved": "https://registry.npmjs.org/es-errors/-/es-errors-1.3.0.tgz",
+      "integrity": "sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/es-object-atoms": {
+      "version": "1.1.1",
+      "resolved": "https://registry.npmjs.org/es-object-atoms/-/es-object-atoms-1.1.1.tgz",
+      "integrity": "sha512-FGgH2h8zKNim9ljj7dankFPcICIK9Cp5bm+c2gQSYePhpaG5+esrLODihIorn+Pe6FGJzWhXQotPv73jTaldXA==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/escape-html": {
+      "version": "1.0.3",
+      "resolved": "https://registry.npmjs.org/escape-html/-/escape-html-1.0.3.tgz",
+      "integrity": "sha512-NiSupZ4OeuGwr68lGIeym/ksIZMJodUGOSCZ/FSnTxcrekbvqrgdUxlJOMpijaKZVjAJrWrGs/6Jy8OMuyj9ow==",
+      "license": "MIT"
+    },
+    "node_modules/etag": {
+      "version": "1.8.1",
+      "resolved": "https://registry.npmjs.org/etag/-/etag-1.8.1.tgz",
+      "integrity": "sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/express": {
+      "version": "5.1.0",
+      "resolved": "https://registry.npmjs.org/express/-/express-5.1.0.tgz",
+      "integrity": "sha512-DT9ck5YIRU+8GYzzU5kT3eHGA5iL+1Zd0EutOmTE9Dtk+Tvuzd23VBU+ec7HPNSTxXYO55gPV/hq4pSBJDjFpA==",
+      "license": "MIT",
+      "dependencies": {
+        "accepts": "^2.0.0",
+        "body-parser": "^2.2.0",
+        "content-disposition": "^1.0.0",
+        "content-type": "^1.0.5",
+        "cookie": "^0.7.1",
+        "cookie-signature": "^1.2.1",
+        "debug": "^4.4.0",
+        "encodeurl": "^2.0.0",
+        "escape-html": "^1.0.3",
+        "etag": "^1.8.1",
+        "finalhandler": "^2.1.0",
+        "fresh": "^2.0.0",
+        "http-errors": "^2.0.0",
+        "merge-descriptors": "^2.0.0",
+        "mime-types": "^3.0.0",
+        "on-finished": "^2.4.1",
+        "once": "^1.4.0",
+        "parseurl": "^1.3.3",
+        "proxy-addr": "^2.0.7",
+        "qs": "^6.14.0",
+        "range-parser": "^1.2.1",
+        "router": "^2.2.0",
+        "send": "^1.1.0",
+        "serve-static": "^2.2.0",
+        "statuses": "^2.0.1",
+        "type-is": "^2.0.1",
+        "vary": "^1.1.2"
+      },
+      "engines": {
+        "node": ">= 18"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/express"
+      }
+    },
+    "node_modules/finalhandler": {
+      "version": "2.1.0",
+      "resolved": "https://registry.npmjs.org/finalhandler/-/finalhandler-2.1.0.tgz",
+      "integrity": "sha512-/t88Ty3d5JWQbWYgaOGCCYfXRwV1+be02WqYYlL6h0lEiUAMPM8o8qKGO01YIkOHzka2up08wvgYD0mDiI+q3Q==",
+      "license": "MIT",
+      "dependencies": {
+        "debug": "^4.4.0",
+        "encodeurl": "^2.0.0",
+        "escape-html": "^1.0.3",
+        "on-finished": "^2.4.1",
+        "parseurl": "^1.3.3",
+        "statuses": "^2.0.1"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/forwarded": {
+      "version": "0.2.0",
+      "resolved": "https://registry.npmjs.org/forwarded/-/forwarded-0.2.0.tgz",
+      "integrity": "sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/fresh": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/fresh/-/fresh-2.0.0.tgz",
+      "integrity": "sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/function-bind": {
+      "version": "1.1.2",
+      "resolved": "https://registry.npmjs.org/function-bind/-/function-bind-1.1.2.tgz",
+      "integrity": "sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==",
+      "license": "MIT",
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/get-intrinsic": {
+      "version": "1.3.0",
+      "resolved": "https://registry.npmjs.org/get-intrinsic/-/get-intrinsic-1.3.0.tgz",
+      "integrity": "sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bind-apply-helpers": "^1.0.2",
+        "es-define-property": "^1.0.1",
+        "es-errors": "^1.3.0",
+        "es-object-atoms": "^1.1.1",
+        "function-bind": "^1.1.2",
+        "get-proto": "^1.0.1",
+        "gopd": "^1.2.0",
+        "has-symbols": "^1.1.0",
+        "hasown": "^2.0.2",
+        "math-intrinsics": "^1.1.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/get-proto": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/get-proto/-/get-proto-1.0.1.tgz",
+      "integrity": "sha512-sTSfBjoXBp89JvIKIefqw7U2CCebsc74kiY6awiGogKtoSGbgjYE/G/+l9sF3MWFPNc9IcoOC4ODfKHfxFmp0g==",
+      "license": "MIT",
+      "dependencies": {
+        "dunder-proto": "^1.0.1",
+        "es-object-atoms": "^1.0.0"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/gopd": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmjs.org/gopd/-/gopd-1.2.0.tgz",
+      "integrity": "sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/has-symbols": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmjs.org/has-symbols/-/has-symbols-1.1.0.tgz",
+      "integrity": "sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/hasown": {
+      "version": "2.0.2",
+      "resolved": "https://registry.npmjs.org/hasown/-/hasown-2.0.2.tgz",
+      "integrity": "sha512-0hJU9SCPvmMzIBdZFqNPXWa6dqh7WdH0cII9y+CyS8rG3nL48Bclra9HmKhVVUHyPWNH5Y7xDwAB7bfgSjkUMQ==",
+      "license": "MIT",
+      "dependencies": {
+        "function-bind": "^1.1.2"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/http-errors": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/http-errors/-/http-errors-2.0.0.tgz",
+      "integrity": "sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ==",
+      "license": "MIT",
+      "dependencies": {
+        "depd": "2.0.0",
+        "inherits": "2.0.4",
+        "setprototypeof": "1.2.0",
+        "statuses": "2.0.1",
+        "toidentifier": "1.0.1"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/iconv-lite": {
+      "version": "0.6.3",
+      "resolved": "https://registry.npmjs.org/iconv-lite/-/iconv-lite-0.6.3.tgz",
+      "integrity": "sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==",
+      "license": "MIT",
+      "dependencies": {
+        "safer-buffer": ">= 2.1.2 < 3.0.0"
+      },
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/inherits": {
+      "version": "2.0.4",
+      "resolved": "https://registry.npmjs.org/inherits/-/inherits-2.0.4.tgz",
+      "integrity": "sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==",
+      "license": "ISC"
+    },
+    "node_modules/ipaddr.js": {
+      "version": "1.9.1",
+      "resolved": "https://registry.npmjs.org/ipaddr.js/-/ipaddr.js-1.9.1.tgz",
+      "integrity": "sha512-0KI/607xoxSToH7GjN1FfSbLoU0+btTicjsQSWQlh/hZykN8KpmMf7uYwPW3R+akZ6R/w18ZlXSHBYXiYUPO3g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.10"
+      }
+    },
+    "node_modules/is-promise": {
+      "version": "4.0.0",
+      "resolved": "https://registry.npmjs.org/is-promise/-/is-promise-4.0.0.tgz",
+      "integrity": "sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==",
+      "license": "MIT"
+    },
+    "node_modules/jsonwebtoken": {
+      "version": "9.0.2",
+      "resolved": "https://registry.npmjs.org/jsonwebtoken/-/jsonwebtoken-9.0.2.tgz",
+      "integrity": "sha512-PRp66vJ865SSqOlgqS8hujT5U4AOgMfhrwYIuIhfKaoSCZcirrmASQr8CX7cUg+RMih+hgznrjp99o+W4pJLHQ==",
+      "license": "MIT",
+      "dependencies": {
+        "jws": "^3.2.2",
+        "lodash.includes": "^4.3.0",
+        "lodash.isboolean": "^3.0.3",
+        "lodash.isinteger": "^4.0.4",
+        "lodash.isnumber": "^3.0.3",
+        "lodash.isplainobject": "^4.0.6",
+        "lodash.isstring": "^4.0.1",
+        "lodash.once": "^4.0.0",
+        "ms": "^2.1.1",
+        "semver": "^7.5.4"
+      },
+      "engines": {
+        "node": ">=12",
+        "npm": ">=6"
+      }
+    },
+    "node_modules/jwa": {
+      "version": "1.4.1",
+      "resolved": "https://registry.npmjs.org/jwa/-/jwa-1.4.1.tgz",
+      "integrity": "sha512-qiLX/xhEEFKUAJ6FiBMbes3w9ATzyk5W7Hvzpa/SLYdxNtng+gcurvrI7TbACjIXlsJyr05/S1oUhZrc63evQA==",
+      "license": "MIT",
+      "dependencies": {
+        "buffer-equal-constant-time": "1.0.1",
+        "ecdsa-sig-formatter": "1.0.11",
+        "safe-buffer": "^5.0.1"
+      }
+    },
+    "node_modules/jws": {
+      "version": "3.2.2",
+      "resolved": "https://registry.npmjs.org/jws/-/jws-3.2.2.tgz",
+      "integrity": "sha512-YHlZCB6lMTllWDtSPHz/ZXTsi8S00usEV6v1tjq8tOUZzw7DpSDWVXjXDre6ed1w/pd495ODpHZYSdkRTsa0HA==",
+      "license": "MIT",
+      "dependencies": {
+        "jwa": "^1.4.1",
+        "safe-buffer": "^5.0.1"
+      }
+    },
+    "node_modules/kareem": {
+      "version": "2.6.3",
+      "resolved": "https://registry.npmjs.org/kareem/-/kareem-2.6.3.tgz",
+      "integrity": "sha512-C3iHfuGUXK2u8/ipq9LfjFfXFxAZMQJJq7vLS45r3D9Y2xQ/m4S8zaR4zMLFWh9AsNPXmcFfUDhTEO8UIC/V6Q==",
+      "license": "Apache-2.0",
+      "engines": {
+        "node": ">=12.0.0"
+      }
+    },
+    "node_modules/lodash.includes": {
+      "version": "4.3.0",
+      "resolved": "https://registry.npmjs.org/lodash.includes/-/lodash.includes-4.3.0.tgz",
+      "integrity": "sha512-W3Bx6mdkRTGtlJISOvVD/lbqjTlPPUDTMnlXZFnVwi9NKJ6tiAk6LVdlhZMm17VZisqhKcgzpO5Wz91PCt5b0w==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isboolean": {
+      "version": "3.0.3",
+      "resolved": "https://registry.npmjs.org/lodash.isboolean/-/lodash.isboolean-3.0.3.tgz",
+      "integrity": "sha512-Bz5mupy2SVbPHURB98VAcw+aHh4vRV5IPNhILUCsOzRmsTmSQ17jIuqopAentWoehktxGd9e/hbIXq980/1QJg==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isinteger": {
+      "version": "4.0.4",
+      "resolved": "https://registry.npmjs.org/lodash.isinteger/-/lodash.isinteger-4.0.4.tgz",
+      "integrity": "sha512-DBwtEWN2caHQ9/imiNeEA5ys1JoRtRfY3d7V9wkqtbycnAmTvRRmbHKDV4a0EYc678/dia0jrte4tjYwVBaZUA==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isnumber": {
+      "version": "3.0.3",
+      "resolved": "https://registry.npmjs.org/lodash.isnumber/-/lodash.isnumber-3.0.3.tgz",
+      "integrity": "sha512-QYqzpfwO3/CWf3XP+Z+tkQsfaLL/EnUlXWVkIk5FUPc4sBdTehEqZONuyRt2P67PXAk+NXmTBcc97zw9t1FQrw==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isplainobject": {
+      "version": "4.0.6",
+      "resolved": "https://registry.npmjs.org/lodash.isplainobject/-/lodash.isplainobject-4.0.6.tgz",
+      "integrity": "sha512-oSXzaWypCMHkPC3NvBEaPHf0KsA5mvPrOPgQWDsbg8n7orZ290M0BmC/jgRZ4vcJ6DTAhjrsSYgdsW/F+MFOBA==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.isstring": {
+      "version": "4.0.1",
+      "resolved": "https://registry.npmjs.org/lodash.isstring/-/lodash.isstring-4.0.1.tgz",
+      "integrity": "sha512-0wJxfxH1wgO3GrbuP+dTTk7op+6L41QCXbGINEmD+ny/G/eCqGzxyCsh7159S+mgDDcoarnBw6PC1PS5+wUGgw==",
+      "license": "MIT"
+    },
+    "node_modules/lodash.once": {
+      "version": "4.1.1",
+      "resolved": "https://registry.npmjs.org/lodash.once/-/lodash.once-4.1.1.tgz",
+      "integrity": "sha512-Sb487aTOCr9drQVL8pIxOzVhafOjZN9UU54hiN8PU3uAiSV7lx1yYNpbNmex2PK6dSJoNTSJUUswT651yww3Mg==",
+      "license": "MIT"
+    },
+    "node_modules/math-intrinsics": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmjs.org/math-intrinsics/-/math-intrinsics-1.1.0.tgz",
+      "integrity": "sha512-/IXtbwEk5HTPyEwyKX6hGkYXxM9nbj64B+ilVJnC/R6B0pH5G4V3b0pVbL7DBj4tkhBAppbQUlf6F6Xl9LHu1g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      }
+    },
+    "node_modules/media-typer": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmjs.org/media-typer/-/media-typer-1.1.0.tgz",
+      "integrity": "sha512-aisnrDP4GNe06UcKFnV5bfMNPBUw4jsLGaWwWfnH3v02GnBuXX2MCVn5RbrWo0j3pczUilYblq7fQ7Nw2t5XKw==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/memory-pager": {
+      "version": "1.5.0",
+      "resolved": "https://registry.npmjs.org/memory-pager/-/memory-pager-1.5.0.tgz",
+      "integrity": "sha512-ZS4Bp4r/Zoeq6+NLJpP+0Zzm0pR8whtGPf1XExKLJBAczGMnSi3It14OiNCStjQjM6NU1okjQGSxgEZN8eBYKg==",
+      "license": "MIT"
+    },
+    "node_modules/merge-descriptors": {
+      "version": "2.0.0",
+      "resolved": "https://registry.npmjs.org/merge-descriptors/-/merge-descriptors-2.0.0.tgz",
+      "integrity": "sha512-Snk314V5ayFLhp3fkUREub6WtjBfPdCPY1Ln8/8munuLuiYhsABgBVWsozAG+MWMbVEvcdcpbi9R7ww22l9Q3g==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=18"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/sindresorhus"
+      }
+    },
+    "node_modules/mime-db": {
+      "version": "1.54.0",
+      "resolved": "https://registry.npmjs.org/mime-db/-/mime-db-1.54.0.tgz",
+      "integrity": "sha512-aU5EJuIN2WDemCcAp2vFBfp/m4EAhWJnUNSSw0ixs7/kXbd6Pg64EmwJkNdFhB8aWt1sH2CTXrLxo/iAGV3oPQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/mime-types": {
+      "version": "3.0.1",
+      "resolved": "https://registry.npmjs.org/mime-types/-/mime-types-3.0.1.tgz",
+      "integrity": "sha512-xRc4oEhT6eaBpU1XF7AjpOFD+xQmXNB5OVKwp4tqCuBpHLS/ZbBDrc07mYTDqVMg6PfxUjjNp85O6Cd2Z/5HWA==",
+      "license": "MIT",
+      "dependencies": {
+        "mime-db": "^1.54.0"
+      },
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/mongodb": {
+      "version": "6.15.0",
+      "resolved": "https://registry.npmjs.org/mongodb/-/mongodb-6.15.0.tgz",
+      "integrity": "sha512-ifBhQ0rRzHDzqp9jAQP6OwHSH7dbYIQjD3SbJs9YYk9AikKEettW/9s/tbSFDTpXcRbF+u1aLrhHxDFaYtZpFQ==",
+      "license": "Apache-2.0",
+      "dependencies": {
+        "@mongodb-js/saslprep": "^1.1.9",
+        "bson": "^6.10.3",
+        "mongodb-connection-string-url": "^3.0.0"
+      },
+      "engines": {
+        "node": ">=16.20.1"
+      },
+      "peerDependencies": {
+        "@aws-sdk/credential-providers": "^3.188.0",
+        "@mongodb-js/zstd": "^1.1.0 || ^2.0.0",
+        "gcp-metadata": "^5.2.0",
+        "kerberos": "^2.0.1",
+        "mongodb-client-encryption": ">=6.0.0 <7",
+        "snappy": "^7.2.2",
+        "socks": "^2.7.1"
+      },
+      "peerDependenciesMeta": {
+        "@aws-sdk/credential-providers": {
+          "optional": true
+        },
+        "@mongodb-js/zstd": {
+          "optional": true
+        },
+        "gcp-metadata": {
+          "optional": true
+        },
+        "kerberos": {
+          "optional": true
+        },
+        "mongodb-client-encryption": {
+          "optional": true
+        },
+        "snappy": {
+          "optional": true
+        },
+        "socks": {
+          "optional": true
+        }
+      }
+    },
+    "node_modules/mongodb-connection-string-url": {
+      "version": "3.0.2",
+      "resolved": "https://registry.npmjs.org/mongodb-connection-string-url/-/mongodb-connection-string-url-3.0.2.tgz",
+      "integrity": "sha512-rMO7CGo/9BFwyZABcKAWL8UJwH/Kc2x0g72uhDWzG48URRax5TCIcJ7Rc3RZqffZzO/Gwff/jyKwCU9TN8gehA==",
+      "license": "Apache-2.0",
+      "dependencies": {
+        "@types/whatwg-url": "^11.0.2",
+        "whatwg-url": "^14.1.0 || ^13.0.0"
+      }
+    },
+    "node_modules/mongoose": {
+      "version": "8.13.2",
+      "resolved": "https://registry.npmjs.org/mongoose/-/mongoose-8.13.2.tgz",
+      "integrity": "sha512-riCBqZmNkYBWjXpM3qWLDQw7QmTKsVZDPhLXFJqC87+OjocEVpvS3dA2BPPUiLAu+m0/QmEj5pSXKhH+/DgerQ==",
+      "license": "MIT",
+      "dependencies": {
+        "bson": "^6.10.3",
+        "kareem": "2.6.3",
+        "mongodb": "~6.15.0",
+        "mpath": "0.9.0",
+        "mquery": "5.0.0",
+        "ms": "2.1.3",
+        "sift": "17.1.3"
+      },
+      "engines": {
+        "node": ">=16.20.1"
+      },
+      "funding": {
+        "type": "opencollective",
+        "url": "https://opencollective.com/mongoose"
+      }
+    },
+    "node_modules/mpath": {
+      "version": "0.9.0",
+      "resolved": "https://registry.npmjs.org/mpath/-/mpath-0.9.0.tgz",
+      "integrity": "sha512-ikJRQTk8hw5DEoFVxHG1Gn9T/xcjtdnOKIU1JTmGjZZlg9LST2mBLmcX3/ICIbgJydT2GOc15RnNy5mHmzfSew==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=4.0.0"
+      }
+    },
+    "node_modules/mquery": {
+      "version": "5.0.0",
+      "resolved": "https://registry.npmjs.org/mquery/-/mquery-5.0.0.tgz",
+      "integrity": "sha512-iQMncpmEK8R8ncT8HJGsGc9Dsp8xcgYMVSbs5jgnm1lFHTZqMJTUWTDx1LBO8+mK3tPNZWFLBghQEIOULSTHZg==",
+      "license": "MIT",
+      "dependencies": {
+        "debug": "4.x"
+      },
+      "engines": {
+        "node": ">=14.0.0"
+      }
+    },
+    "node_modules/ms": {
+      "version": "2.1.3",
+      "resolved": "https://registry.npmjs.org/ms/-/ms-2.1.3.tgz",
+      "integrity": "sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==",
+      "license": "MIT"
+    },
+    "node_modules/negotiator": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/negotiator/-/negotiator-1.0.0.tgz",
+      "integrity": "sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/object-assign": {
+      "version": "4.1.1",
+      "resolved": "https://registry.npmjs.org/object-assign/-/object-assign-4.1.1.tgz",
+      "integrity": "sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.10.0"
+      }
+    },
+    "node_modules/object-inspect": {
+      "version": "1.13.4",
+      "resolved": "https://registry.npmjs.org/object-inspect/-/object-inspect-1.13.4.tgz",
+      "integrity": "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/on-finished": {
+      "version": "2.4.1",
+      "resolved": "https://registry.npmjs.org/on-finished/-/on-finished-2.4.1.tgz",
+      "integrity": "sha512-oVlzkg3ENAhCk2zdv7IJwd/QUD4z2RxRwpkcGY8psCVcCYZNq4wYnVWALHM+brtuJjePWiYF/ClmuDr8Ch5+kg==",
+      "license": "MIT",
+      "dependencies": {
+        "ee-first": "1.1.1"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/once": {
+      "version": "1.4.0",
+      "resolved": "https://registry.npmjs.org/once/-/once-1.4.0.tgz",
+      "integrity": "sha512-lNaJgI+2Q5URQBkccEKHTQOPaXdUxnZZElQTZY0MFUAuaEqe1E+Nyvgdz/aIyNi6Z9MzO5dv1H8n58/GELp3+w==",
+      "license": "ISC",
+      "dependencies": {
+        "wrappy": "1"
+      }
+    },
+    "node_modules/parseurl": {
+      "version": "1.3.3",
+      "resolved": "https://registry.npmjs.org/parseurl/-/parseurl-1.3.3.tgz",
+      "integrity": "sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/path-to-regexp": {
+      "version": "8.2.0",
+      "resolved": "https://registry.npmjs.org/path-to-regexp/-/path-to-regexp-8.2.0.tgz",
+      "integrity": "sha512-TdrF7fW9Rphjq4RjrW0Kp2AW0Ahwu9sRGTkS6bvDi0SCwZlEZYmcfDbEsTz8RVk0EHIS/Vd1bv3JhG+1xZuAyQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=16"
+      }
+    },
+    "node_modules/proxy-addr": {
+      "version": "2.0.7",
+      "resolved": "https://registry.npmjs.org/proxy-addr/-/proxy-addr-2.0.7.tgz",
+      "integrity": "sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==",
+      "license": "MIT",
+      "dependencies": {
+        "forwarded": "0.2.0",
+        "ipaddr.js": "1.9.1"
+      },
+      "engines": {
+        "node": ">= 0.10"
+      }
+    },
+    "node_modules/punycode": {
+      "version": "2.3.1",
+      "resolved": "https://registry.npmjs.org/punycode/-/punycode-2.3.1.tgz",
+      "integrity": "sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=6"
+      }
+    },
+    "node_modules/qs": {
+      "version": "6.14.0",
+      "resolved": "https://registry.npmjs.org/qs/-/qs-6.14.0.tgz",
+      "integrity": "sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==",
+      "license": "BSD-3-Clause",
+      "dependencies": {
+        "side-channel": "^1.1.0"
+      },
+      "engines": {
+        "node": ">=0.6"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/range-parser": {
+      "version": "1.2.1",
+      "resolved": "https://registry.npmjs.org/range-parser/-/range-parser-1.2.1.tgz",
+      "integrity": "sha512-Hrgsx+orqoygnmhFbKaHE6c296J+HTAQXoxEF6gNupROmmGJRoyzfG3ccAveqCBrwr/2yxQ5BVd/GTl5agOwSg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/raw-body": {
+      "version": "3.0.0",
+      "resolved": "https://registry.npmjs.org/raw-body/-/raw-body-3.0.0.tgz",
+      "integrity": "sha512-RmkhL8CAyCRPXCE28MMH0z2PNWQBNk2Q09ZdxM9IOOXwxwZbN+qbWaatPkdkWIKL2ZVDImrN/pK5HTRz2PcS4g==",
+      "license": "MIT",
+      "dependencies": {
+        "bytes": "3.1.2",
+        "http-errors": "2.0.0",
+        "iconv-lite": "0.6.3",
+        "unpipe": "1.0.0"
+      },
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/router": {
+      "version": "2.2.0",
+      "resolved": "https://registry.npmjs.org/router/-/router-2.2.0.tgz",
+      "integrity": "sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==",
+      "license": "MIT",
+      "dependencies": {
+        "debug": "^4.4.0",
+        "depd": "^2.0.0",
+        "is-promise": "^4.0.0",
+        "parseurl": "^1.3.3",
+        "path-to-regexp": "^8.0.0"
+      },
+      "engines": {
+        "node": ">= 18"
+      }
+    },
+    "node_modules/safe-buffer": {
+      "version": "5.2.1",
+      "resolved": "https://registry.npmjs.org/safe-buffer/-/safe-buffer-5.2.1.tgz",
+      "integrity": "sha512-rp3So07KcdmmKbGvgaNxQSJr7bGVSVk5S9Eq1F+ppbRo70+YeaDxkw5Dd8NPN+GD6bjnYm2VuPuCXmpuYvmCXQ==",
+      "funding": [
+        {
+          "type": "github",
+          "url": "https://github.com/sponsors/feross"
+        },
+        {
+          "type": "patreon",
+          "url": "https://www.patreon.com/feross"
+        },
+        {
+          "type": "consulting",
+          "url": "https://feross.org/support"
+        }
+      ],
+      "license": "MIT"
+    },
+    "node_modules/safer-buffer": {
+      "version": "2.1.2",
+      "resolved": "https://registry.npmjs.org/safer-buffer/-/safer-buffer-2.1.2.tgz",
+      "integrity": "sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==",
+      "license": "MIT"
+    },
+    "node_modules/semver": {
+      "version": "7.7.1",
+      "resolved": "https://registry.npmjs.org/semver/-/semver-7.7.1.tgz",
+      "integrity": "sha512-hlq8tAfn0m/61p4BVRcPzIGr6LKiMwo4VM6dGi6pt4qcRkmNzTcWq6eCEjEh+qXjkMDvPlOFFSGwQjoEa6gyMA==",
+      "license": "ISC",
+      "bin": {
+        "semver": "bin/semver.js"
+      },
+      "engines": {
+        "node": ">=10"
+      }
+    },
+    "node_modules/send": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmjs.org/send/-/send-1.2.0.tgz",
+      "integrity": "sha512-uaW0WwXKpL9blXE2o0bRhoL2EGXIrZxQ2ZQ4mgcfoBxdFmQold+qWsD2jLrfZ0trjKL6vOw0j//eAwcALFjKSw==",
+      "license": "MIT",
+      "dependencies": {
+        "debug": "^4.3.5",
+        "encodeurl": "^2.0.0",
+        "escape-html": "^1.0.3",
+        "etag": "^1.8.1",
+        "fresh": "^2.0.0",
+        "http-errors": "^2.0.0",
+        "mime-types": "^3.0.1",
+        "ms": "^2.1.3",
+        "on-finished": "^2.4.1",
+        "range-parser": "^1.2.1",
+        "statuses": "^2.0.1"
+      },
+      "engines": {
+        "node": ">= 18"
+      }
+    },
+    "node_modules/serve-static": {
+      "version": "2.2.0",
+      "resolved": "https://registry.npmjs.org/serve-static/-/serve-static-2.2.0.tgz",
+      "integrity": "sha512-61g9pCh0Vnh7IutZjtLGGpTA355+OPn2TyDv/6ivP2h/AdAVX9azsoxmg2/M6nZeQZNYBEwIcsne1mJd9oQItQ==",
+      "license": "MIT",
+      "dependencies": {
+        "encodeurl": "^2.0.0",
+        "escape-html": "^1.0.3",
+        "parseurl": "^1.3.3",
+        "send": "^1.2.0"
+      },
+      "engines": {
+        "node": ">= 18"
+      }
+    },
+    "node_modules/setprototypeof": {
+      "version": "1.2.0",
+      "resolved": "https://registry.npmjs.org/setprototypeof/-/setprototypeof-1.2.0.tgz",
+      "integrity": "sha512-E5LDX7Wrp85Kil5bhZv46j8jOeboKq5JMmYM3gVGdGH8xFpPWXUMsNrlODCrkoxMEeNi/XZIwuRvY4XNwYMJpw==",
+      "license": "ISC"
+    },
+    "node_modules/side-channel": {
+      "version": "1.1.0",
+      "resolved": "https://registry.npmjs.org/side-channel/-/side-channel-1.1.0.tgz",
+      "integrity": "sha512-ZX99e6tRweoUXqR+VBrslhda51Nh5MTQwou5tnUDgbtyM0dBgmhEDtWGP/xbKn6hqfPRHujUNwz5fy/wbbhnpw==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0",
+        "object-inspect": "^1.13.3",
+        "side-channel-list": "^1.0.0",
+        "side-channel-map": "^1.0.1",
+        "side-channel-weakmap": "^1.0.2"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/side-channel-list": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/side-channel-list/-/side-channel-list-1.0.0.tgz",
+      "integrity": "sha512-FCLHtRD/gnpCiCHEiJLOwdmFP+wzCmDEkc9y7NsYxeF4u7Btsn1ZuwgwJGxImImHicJArLP4R0yX4c2KCrMrTA==",
+      "license": "MIT",
+      "dependencies": {
+        "es-errors": "^1.3.0",
+        "object-inspect": "^1.13.3"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/side-channel-map": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/side-channel-map/-/side-channel-map-1.0.1.tgz",
+      "integrity": "sha512-VCjCNfgMsby3tTdo02nbjtM/ewra6jPHmpThenkTYh8pG9ucZ/1P8So4u4FGBek/BjpOVsDCMoLA/iuBKIFXRA==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bound": "^1.0.2",
+        "es-errors": "^1.3.0",
+        "get-intrinsic": "^1.2.5",
+        "object-inspect": "^1.13.3"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/side-channel-weakmap": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/side-channel-weakmap/-/side-channel-weakmap-1.0.2.tgz",
+      "integrity": "sha512-WPS/HvHQTYnHisLo9McqBHOJk2FkHO/tlpvldyrnem4aeQp4hai3gythswg6p01oSoTl58rcpiFAjF2br2Ak2A==",
+      "license": "MIT",
+      "dependencies": {
+        "call-bound": "^1.0.2",
+        "es-errors": "^1.3.0",
+        "get-intrinsic": "^1.2.5",
+        "object-inspect": "^1.13.3",
+        "side-channel-map": "^1.0.1"
+      },
+      "engines": {
+        "node": ">= 0.4"
+      },
+      "funding": {
+        "url": "https://github.com/sponsors/ljharb"
+      }
+    },
+    "node_modules/sift": {
+      "version": "17.1.3",
+      "resolved": "https://registry.npmjs.org/sift/-/sift-17.1.3.tgz",
+      "integrity": "sha512-Rtlj66/b0ICeFzYTuNvX/EF1igRbbnGSvEyT79McoZa/DeGhMyC5pWKOEsZKnpkqtSeovd5FL/bjHWC3CIIvCQ==",
+      "license": "MIT"
+    },
+    "node_modules/sparse-bitfield": {
+      "version": "3.0.3",
+      "resolved": "https://registry.npmjs.org/sparse-bitfield/-/sparse-bitfield-3.0.3.tgz",
+      "integrity": "sha512-kvzhi7vqKTfkh0PZU+2D2PIllw2ymqJKujUcyPMd9Y75Nv4nPbGJZXNhxsgdQab2BmlDct1YnfQCguEvHr7VsQ==",
+      "license": "MIT",
+      "dependencies": {
+        "memory-pager": "^1.0.2"
+      }
+    },
+    "node_modules/statuses": {
+      "version": "2.0.1",
+      "resolved": "https://registry.npmjs.org/statuses/-/statuses-2.0.1.tgz",
+      "integrity": "sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/toidentifier": {
+      "version": "1.0.1",
+      "resolved": "https://registry.npmjs.org/toidentifier/-/toidentifier-1.0.1.tgz",
+      "integrity": "sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==",
+      "license": "MIT",
+      "engines": {
+        "node": ">=0.6"
+      }
+    },
+    "node_modules/tr46": {
+      "version": "5.1.1",
+      "resolved": "https://registry.npmjs.org/tr46/-/tr46-5.1.1.tgz",
+      "integrity": "sha512-hdF5ZgjTqgAntKkklYw0R03MG2x/bSzTtkxmIRw/sTNV8YXsCJ1tfLAX23lhxhHJlEf3CRCOCGGWw3vI3GaSPw==",
+      "license": "MIT",
+      "dependencies": {
+        "punycode": "^2.3.1"
+      },
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/type-is": {
+      "version": "2.0.1",
+      "resolved": "https://registry.npmjs.org/type-is/-/type-is-2.0.1.tgz",
+      "integrity": "sha512-OZs6gsjF4vMp32qrCbiVSkrFmXtG/AZhY3t0iAMrMBiAZyV9oALtXO8hsrHbMXF9x6L3grlFuwW2oAz7cav+Gw==",
+      "license": "MIT",
+      "dependencies": {
+        "content-type": "^1.0.5",
+        "media-typer": "^1.1.0",
+        "mime-types": "^3.0.0"
+      },
+      "engines": {
+        "node": ">= 0.6"
+      }
+    },
+    "node_modules/unpipe": {
+      "version": "1.0.0",
+      "resolved": "https://registry.npmjs.org/unpipe/-/unpipe-1.0.0.tgz",
+      "integrity": "sha512-pjy2bYhSsufwWlKwPc+l3cN7+wuJlK6uz0YdJEOlQDbl6jo/YlPi4mb8agUkVC8BF7V8NuzeyPNqRksA3hztKQ==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/vary": {
+      "version": "1.1.2",
+      "resolved": "https://registry.npmjs.org/vary/-/vary-1.1.2.tgz",
+      "integrity": "sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==",
+      "license": "MIT",
+      "engines": {
+        "node": ">= 0.8"
+      }
+    },
+    "node_modules/webidl-conversions": {
+      "version": "7.0.0",
+      "resolved": "https://registry.npmjs.org/webidl-conversions/-/webidl-conversions-7.0.0.tgz",
+      "integrity": "sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==",
+      "license": "BSD-2-Clause",
+      "engines": {
+        "node": ">=12"
+      }
+    },
+    "node_modules/whatwg-url": {
+      "version": "14.2.0",
+      "resolved": "https://registry.npmjs.org/whatwg-url/-/whatwg-url-14.2.0.tgz",
+      "integrity": "sha512-De72GdQZzNTUBBChsXueQUnPKDkg/5A5zp7pFDuQAj5UFoENpiACU0wlCvzpAGnTkj++ihpKwKyYewn/XNUbKw==",
+      "license": "MIT",
+      "dependencies": {
+        "tr46": "^5.1.0",
+        "webidl-conversions": "^7.0.0"
+      },
+      "engines": {
+        "node": ">=18"
+      }
+    },
+    "node_modules/wrappy": {
+      "version": "1.0.2",
+      "resolved": "https://registry.npmjs.org/wrappy/-/wrappy-1.0.2.tgz",
+      "integrity": "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==",
+      "license": "ISC"
+    }
+  }
+}
+packaje.json
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.13.2"
+  }
+}
+server.js
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
+
+const app = express();
+
+// Middleware
+app.use(express.json());
+app.use(cors());
+
+// DB Connection
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("DB error:", err));
+
+// Routes
+const authRoutes = require("./routes/authroute");
+const profileRoutes = require("./routes/profile");
+const expenseRoutes = require("./routes/expenses");
+const incomeRoutes = require("./routes/income");
+const budgetRoutes = require("./routes/budjet"); 
+
+app.use("/api", authRoutes);
+app.use("/api/user", profileRoutes);
+app.use("/api/expenses", expenseRoutes);
+app.use("/api/income", incomeRoutes);
+app.use("/api/budgets", budgetRoutes);
+
+// Default route
+app.get("/", (req, res) => {
+  res.send("🌐 Backend is running!");
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+here in the above code i have alredy done so provide the updated and correct code for my fullstack project and i don't need to implement any AI now just if any adinol modules required ok add it
